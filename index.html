@@ -1,0 +1,1947 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Meltify</title>
+<link rel="icon" type="image/svg+xml" href="favicon.svg?v=2">
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#0d0d0d">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<meta name="apple-mobile-web-app-title" content="Meltify">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;700;800&family=IBM+Plex+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<script src="config.js"></script>
+<style>
+:root {
+  --bg: #000000;
+  --bg2: #121212;
+  --bg3: #181818;
+  --line: #282828;
+  --line2: #333;
+  --text: #ffffff;
+  --muted: #6b6b6b;
+  --mid: #b3b3b3;
+  --accent: #1DB954;
+  --accent2: #1ed760;
+  --warm: #1DB954;
+  --syne: 'Syne', sans-serif;
+  --mono: 'JetBrains Mono', monospace;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { height: 100%; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--syne);
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* HEADER */
+.header {
+  display: flex;
+  align-items: center;
+  padding: 14px 20px;
+  flex-shrink: 0;
+  background: linear-gradient(180deg, #1a1a1a 0%, #000 100%);
+}
+
+.wordmark {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+  padding-top: 2px;
+}
+
+.header-text {
+  font-family: var(--mono);
+  font-size: 13px;
+  color: #ffffff;
+  line-height: 1.7;
+  flex: 1;
+  min-width: 0;
+  padding-left: 16px;
+}
+
+.live-pill {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--muted);
+  letter-spacing: 0.1em;
+}
+
+.live-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--muted);
+}
+.live-dot.playing {
+  background: var(--accent);
+  animation: pulse 1.4s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.5; transform: scale(0.8); }
+}
+
+/* LAYOUT */
+.body {
+  display: flex;
+  flex: 1;
+  align-items: flex-start;
+  justify-content: center;
+  min-height: 0;
+}
+
+/* PLAYER SIDE */
+.player-side {
+  width: 100%;
+  max-width: 520px;
+  flex-shrink: 0;
+  border-right: none;
+  display: flex;
+  flex-direction: column;
+  padding: 0;
+}
+
+.artwork {
+  width: 100%;
+  aspect-ratio: 1;
+  background: var(--bg3);
+  position: relative;
+  overflow: hidden;
+  flex-shrink: 0;
+  margin-top: 0;
+}
+
+.artwork-img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  opacity: 0;
+  transition: opacity 0.4s;
+}
+.artwork-img.loaded { opacity: 1; }
+
+.artwork-bg {
+  position: absolute;
+  inset: 0;
+  background: 
+    radial-gradient(ellipse at 30% 40%, rgba(29,185,84,0.12) 0%, transparent 60%),
+    radial-gradient(ellipse at 70% 70%, rgba(29,185,84,0.06) 0%, transparent 50%);
+  animation: breathe 8s ease-in-out infinite;
+}
+
+@keyframes breathe {
+  0%, 100% { opacity: 0.6; transform: scale(1); }
+  50% { opacity: 1; transform: scale(1.05); }
+}
+
+.artwork-rings {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.ring {
+  position: absolute;
+  border-radius: 50%;
+  border: 1px solid rgba(29,185,84,0.12);
+}
+
+.artwork-label {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  padding: 80px 16px 14px;
+  background: linear-gradient(
+    transparent 0%,
+    transparent 60%,
+    rgba(0,0,0,0.4) 75%,
+    rgba(0,0,0,0.85) 88%,
+    rgba(0,0,0,0.98) 95%,
+    #000 100%
+  );
+}
+
+.artwork-track {
+  font-size: 20px;
+  font-weight: 700;
+  color: #ffffff;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  text-shadow: 0 1px 12px rgba(0,0,0,1), 0 2px 24px rgba(0,0,0,0.9);
+  margin-bottom: 4px;
+}
+
+.artwork-artist {
+  font-family: var(--mono);
+  font-size: 14px;
+  color: #1DB954;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  text-shadow: 0 1px 12px rgba(0,0,0,1), 0 2px 24px rgba(0,0,0,0.9);
+}
+
+.artwork-album {
+  font-family: var(--mono);
+  font-size: 13px;
+  color: #ffffff;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-top: 2px;
+  opacity: 0.7;
+  text-shadow: 0 1px 12px rgba(0,0,0,1), 0 2px 24px rgba(0,0,0,0.9);
+}
+
+/* PROGRESS */
+.progress-wrap {
+  padding: 16px 32px 0;
+  background: linear-gradient(rgba(0,0,0,0.3), transparent 40%);
+}
+
+.progress-bar {
+  width: 100%;
+  height: 6px;
+  background: var(--line2);
+  border-radius: 3px;
+  cursor: pointer;
+  margin-bottom: 10px;
+  position: relative;
+}
+
+.progress-bar:hover .progress-fill { background: var(--accent); }
+
+.progress-fill {
+  height: 100%;
+  background: #fff;
+  border-radius: 3px;
+  width: 0%;
+  transition: width 0.8s linear;
+  position: relative;
+}
+
+.progress-fill::after {
+  content: '';
+  position: absolute;
+  right: -8px; top: -5px;
+  width: 16px; height: 16px;
+  border-radius: 50%;
+  background: #fff;
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+
+.progress-bar:hover .progress-fill::after { opacity: 1; }
+
+.progress-times {
+  display: flex;
+  justify-content: space-between;
+  font-family: var(--mono);
+  font-size: 13px;
+  color: #b3b3b3;
+}
+
+/* CONTROLS */
+.controls {
+  padding: 24px 32px 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 24px;
+}
+
+.play-btn {
+  width: 56px; height: 56px;
+  border-radius: 50%;
+  background: #fff;
+  border: none;
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+  transition: transform 0.15s, background 0.15s;
+}
+.play-btn:hover { transform: scale(1.06); background: #f0f0f0; }
+.play-btn:active { transform: scale(0.97); }
+
+.play-icon {
+  width: 0; height: 0;
+  border-style: solid;
+  border-width: 9px 0 9px 16px;
+  border-color: transparent transparent transparent #000;
+  margin-left: 3px;
+}
+.pause-icon {
+  display: flex; gap: 4px;
+}
+.pause-bar {
+  width: 4px; height: 18px;
+  background: #000;
+  border-radius: 2px;
+}
+
+.skip-btn, .prev-btn {
+  background: none;
+  border: none;
+  color: #b3b3b3;
+  font-family: var(--mono);
+  font-size: 13px;
+  letter-spacing: 0.1em;
+  padding: 8px 16px;
+  cursor: pointer;
+  text-transform: uppercase;
+  transition: color 0.15s;
+}
+.skip-btn:hover, .prev-btn:hover, .skip-btn:active, .prev-btn:active { color: #fff; }
+
+.shuffle-btn {
+  margin-left: auto;
+  background: none;
+  border: none;
+  color: var(--accent);
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  cursor: pointer;
+  opacity: 0.8;
+}
+
+/* TRACK META */
+.track-meta { display: none; }
+
+.meta-label {
+  font-family: var(--mono);
+  font-size: 9px;
+  color: var(--muted);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  margin-bottom: 6px;
+}
+
+.meta-license {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--muted);
+  margin-bottom: 3px;
+}
+
+.meta-link {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--accent2);
+  text-decoration: none;
+  word-break: break-all;
+}
+.meta-link:hover, .meta-link:active { color: var(--accent); }
+
+/* TRACKLIST SIDE */
+.tracklist-side {
+  flex: 1;
+  display: none;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.tracklist-header {
+  padding: 18px 28px 14px;
+  border-bottom: 1px solid var(--line);
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  flex-shrink: 0;
+}
+
+.tracklist-title {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--muted);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.tracklist-count {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--muted);
+}
+
+.tracklist {
+  flex: 1;
+  overflow-y: auto;
+  padding: 6px 0;
+}
+
+.tracklist::-webkit-scrollbar { width: 3px; }
+.tracklist::-webkit-scrollbar-track { background: transparent; }
+.tracklist::-webkit-scrollbar-thumb { background: var(--line2); border-radius: 2px; }
+
+.track-row {
+  display: grid;
+  grid-template-columns: 28px 1fr auto;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 28px;
+  cursor: pointer;
+  border-left: 2px solid transparent;
+  transition: background 0.1s;
+}
+.track-row:hover { background: var(--bg2); }
+.track-row.active {
+  background: var(--bg3);
+  border-left-color: var(--accent);
+}
+.track-row.active .tr-num { display: none; }
+.track-row.active .tr-playing { display: flex; }
+.track-row.active .tr-title { color: var(--accent); }
+
+.tr-num {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--muted);
+  text-align: right;
+}
+
+.tr-playing {
+  display: none;
+  align-items: flex-end;
+  justify-content: center;
+  gap: 2px;
+  height: 14px;
+}
+
+.eq-bar {
+  width: 3px;
+  background: var(--accent);
+  border-radius: 1px;
+  animation: eq 0.8s ease-in-out infinite alternate;
+}
+.eq-bar:nth-child(2) { animation-delay: 0.2s; }
+.eq-bar:nth-child(3) { animation-delay: 0.4s; }
+
+@keyframes eq {
+  from { height: 3px; }
+  to { height: 14px; }
+}
+
+.tr-info { min-width: 0; }
+.tr-title {
+  font-size: 13px;
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-bottom: 2px;
+}
+.tr-artist {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.tr-album {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--line2);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.tr-dur {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--muted);
+  flex-shrink: 0;
+}
+
+.tr-block {
+  background: none;
+  border: none;
+  color: var(--muted);
+  font-size: 14px;
+  padding: 2px 6px;
+  cursor: pointer;
+  opacity: 0;
+  flex-shrink: 0;
+  transition: opacity 0.1s, color 0.1s;
+}
+.track-row:hover .tr-block { opacity: 1; }
+.tr-block:hover, .tr-block:active { color: #ff5f5f !important; }
+
+.block-btns { display: none; gap: 4px; justify-content: center; padding: 8px 0 12px; width: 100%; }
+.block-current-btn {
+  background: none;
+  border: none;
+  color: #b3b3b3;
+  font-family: var(--mono);
+  font-size: 13px;
+  letter-spacing: 0.1em;
+  padding: 8px 20px;
+  cursor: pointer;
+  text-transform: uppercase;
+  transition: color 0.15s;
+  white-space: nowrap;
+}
+
+
+.blocked-panel {
+  padding: 12px 24px;
+  border-top: 1px solid var(--line);
+}
+.blocked-panel-label {
+  font-family: var(--mono);
+  font-size: 9px;
+  color: var(--muted);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  margin-bottom: 8px;
+}
+.blocked-tags { display: flex; flex-wrap: wrap; gap: 6px; }
+.blocked-tag {
+  display: flex; align-items: center; gap: 6px;
+  background: var(--bg3);
+  border: 1px solid var(--line2);
+  border-radius: 3px;
+  padding: 3px 8px;
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--muted);
+}
+.blocked-tag button {
+  background: none; border: none; cursor: pointer;
+  color: var(--muted); font-size: 14px; line-height: 1; padding: 0;
+}
+.blocked-tag button:hover, .blocked-tag button:active { color: var(--accent); }
+
+/* Reset stuck hover states on touch devices */
+@media (hover: none) {
+  .skip-btn, .prev-btn, .footer-link, .action-cancel-btn,
+  .info-overlay-close, .block-current-btn, .tr-block,
+  .blocked-tag button, .meta-link {
+    -webkit-tap-highlight-color: transparent;
+  }
+}
+  padding: 8px 28px;
+  border-top: 1px solid var(--line);
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--muted);
+  flex-shrink: 0;
+  min-height: 34px;
+  display: flex;
+  align-items: center;
+}
+.statusbar.err { color: #ff5f5f; }
+
+.site-footer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  padding: 20px 20px 40px;
+  flex-shrink: 0;
+}
+
+.footer-link {
+  font-family: var(--mono);
+  font-size: 13px;
+  color: var(--muted);
+  text-decoration: none;
+  letter-spacing: 0.1em;
+  background: none;
+  border: none;
+  cursor: pointer;
+  transition: color 0.15s;
+}
+.footer-link:hover, .footer-link:active { color: #fff; }
+
+.footer-install {
+  font-size: 16px;
+  letter-spacing: 0;
+}
+
+/* MELT / MOLT MODALS */
+.action-modal {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.85);
+  z-index: 300;
+  display: none;
+  align-items: flex-end;
+  justify-content: center;
+  padding-bottom: 0;
+}
+.action-modal-inner {
+  background: #111;
+  border-top: 1px solid var(--line);
+  border-radius: 16px 16px 0 0;
+  padding: 28px 24px 40px;
+  width: 100%;
+  max-width: 520px;
+  animation: slideup 0.3s ease;
+}
+.action-modal-inner h3 {
+  font-family: var(--mono);
+  font-size: 16px;
+  font-weight: 500;
+  color: #fff;
+  margin-bottom: 16px;
+  letter-spacing: 0.05em;
+}
+.action-modal-inner p {
+  font-family: var(--mono);
+  font-size: 13px;
+  line-height: 1.8;
+  color: #b3b3b3;
+  margin-bottom: 28px;
+}
+.action-modal-code {
+  font-family: var(--mono);
+  font-size: 18px;
+  font-weight: 500;
+  color: #1DB954;
+  letter-spacing: 0.2em;
+  margin-bottom: 8px;
+  display: block;
+}
+.action-modal-btns {
+  display: flex;
+  gap: 12px;
+}
+.action-confirm-btn {
+  background: #1DB954;
+  color: #000;
+  font-family: var(--mono);
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: 0.1em;
+  padding: 14px 0;
+  border-radius: 50px;
+  border: none;
+  cursor: pointer;
+  flex: 1;
+  text-transform: uppercase;
+}
+.action-cancel-btn {
+  background: none;
+  color: #b3b3b3;
+  font-family: var(--mono);
+  font-size: 13px;
+  letter-spacing: 0.1em;
+  padding: 14px 0;
+  border-radius: 50px;
+  border: 1px solid #333;
+  cursor: pointer;
+  flex: 1;
+  text-transform: uppercase;
+  transition: color 0.15s;
+}
+.action-cancel-btn:hover, .action-cancel-btn:active { color: #fff; }
+
+audio { display: none; }
+
+/* MOBILE */
+@media (max-width: 640px) {
+  .tracklist-side { display: none; }
+
+  .body {
+    flex: unset;
+    height: auto;
+    overflow: visible;
+    align-items: stretch;
+  }
+
+  .player-side {
+    width: 100%;
+    max-width: 100%;
+    border-right: none;
+    height: auto;
+  }
+
+  /* remove aspect-ratio entirely on mobile, set fixed height */
+  .artwork {
+    aspect-ratio: unset;
+    width: 100%;
+    height: 260px;
+  }
+
+  .artwork-track { font-size: 15px; }
+  .artwork-artist { font-size: 11px; }
+  .artwork-album { font-size: 10px; }
+  .skip-btn, .prev-btn, .block-current-btn { font-size: 11px; height: 36px; padding: 0 14px; }
+  .header-text { font-size: 12px; }
+  .header { padding: 16px 16px 14px; }
+  .play-btn { width: 64px; height: 64px; }
+  .track-meta { display: none; }
+  .blocked-panel { padding: 12px 16px; }
+  .desktop-hint { display: block !important; }
+}
+
+.desktop-hint {
+  display: none;
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--muted);
+  text-align: center;
+  padding: 12px 24px 0;
+  letter-spacing: 0.06em;
+}
+/* INFO OVERLAY */
+.info-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.95);
+  z-index: 200;
+  overflow-y: auto;
+  padding: 32px 28px 60px;
+  display: none;
+  animation: fadein 0.25s ease;
+}
+@keyframes fadein {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+.info-overlay-close {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  background: none;
+  border: none;
+  color: var(--muted);
+  font-size: 24px;
+  cursor: pointer;
+  line-height: 1;
+  transition: color 0.15s;
+}
+.info-overlay-close:hover, .info-overlay-close:active { color: #fff; }
+.info-icon {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: rgba(0,0,0,0.85);
+  border: 1px solid rgba(29,185,84,0.5);
+  color: #ffffff;
+  font-family: var(--mono);
+  font-size: 13px;
+  font-style: normal;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: 10;
+  animation: icon-pulse 6s ease-in-out infinite;
+  transition: background 0.15s;
+}
+.info-icon:hover { background: rgba(0,0,0,0.95); border-color: #1DB954; animation: none; }
+
+@keyframes icon-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(29,185,84,0), 0 0 0 0 rgba(29,185,84,0); border-color: rgba(29,185,84,0.4); }
+  50% { box-shadow: 0 0 6px 2px rgba(29,185,84,0.3), 0 0 16px 6px rgba(29,185,84,0.1); border-color: rgba(29,185,84,1); }
+}
+</style>
+</head>
+<body>
+
+<div class="header" style="padding:0;border:none;background:none;height:0;overflow:hidden"></div>
+
+<!-- INFO OVERLAY -->
+<div class="info-overlay" id="info-overlay">
+  <button class="info-overlay-close" onclick="hideInfo()">✕</button>
+  <div style="max-width:560px;margin:0 auto;padding-top:20px">
+    <div style="display:flex;align-items:center;gap:14px;margin-bottom:28px">
+      <svg width="32" height="32" viewBox="-8 0 116 100" xmlns="http://www.w3.org/2000/svg"><circle cx="50" cy="50" r="42" fill="none" stroke="#1DB954" stroke-width="14"/><line x1="-6" y1="50" x2="106" y2="50" stroke="#1DB954" stroke-width="14" stroke-linecap="round"/></svg>
+      <span style="font-family:'JetBrains Mono',monospace;font-size:18px;font-weight:500;color:#fff;letter-spacing:0.08em">Meltify</span>
+    </div>
+
+    <!-- SECTION 1: Curation info -->
+    <p style="font-family:'JetBrains Mono',monospace;font-size:15px;line-height:1.8;color:#fff;margin-bottom:24px">This is an underground radio station. The music here sits somewhere between drone, motorik, psych folk, noise and home-recorded experiment — made by people completely inside their own world, indifferent to audiences, indifferent to genre, indifferent to whether anyone is paying attention. You won't find this on Spotify's algorithms. That's the point.</p>
+
+    <p style="font-family:'JetBrains Mono',monospace;font-size:18px;font-weight:500;color:#fff;margin-bottom:4px">Big Blood</p>
+    <p style="font-family:'JetBrains Mono',monospace;font-size:12px;color:#1DB954;margin-bottom:20px;letter-spacing:0.1em">CURRENT CURATION &mdash; 109 TRACKS</p>
+
+    <p style="font-family:'JetBrains Mono',monospace;font-size:14px;line-height:1.8;color:#b3b3b3;margin-bottom:20px">Big Blood have one of the most remarkable catalogues in underground music — twenty years of recordings, constantly evolving, never repeating themselves. They deserve their own curation.</p>
+
+    <p style="font-family:'JetBrains Mono',monospace;font-size:14px;line-height:1.8;color:#b3b3b3;margin-bottom:20px">Big Blood started as a duo in Maine in the mid-2000s, then became a family band as their kids grew up playing alongside them. Over two decades they've drifted between psych folk, noise pop, home-recorded pop and pure experiment — never settling, never repeating themselves, always sounding like nobody else. Their trajectory is one of quiet persistence: releasing constantly, touring rarely, completely indifferent to whether anyone was paying attention.</p>
+
+    <p style="font-family:'JetBrains Mono',monospace;font-size:13px;line-height:1.8;color:#6b6b6b;margin-bottom:32px">Hit play and it shuffles everything. Two buttons shape your experience — <strong style="color:#b3b3b3">Molt</strong> any track you don't want to hear again and it's gone from this curation forever. <strong style="color:#1DB954">Melt</strong> any track you love and it's added to your own personal curation, which builds up over time across all our curations. Nothing is saved to any server. No login required. It all lives in your browser.</p>
+
+    <!-- SECTION 2: About curator - expandable -->
+    <button onclick="toggleCurator()" id="curator-toggle" style="background:none;border:none;font-family:'JetBrains Mono',monospace;font-size:13px;color:#b3b3b3;letter-spacing:0.08em;cursor:pointer;padding:0;margin-bottom:16px;display:flex;align-items:center;gap:8px;border-bottom:1px solid #282828;padding-bottom:16px;width:100%">
+      <span id="curator-arrow">▶</span> About the curator
+    </button>
+
+    <div id="curator-section" style="display:none;border-left:1px solid #282828;padding-left:16px;margin-bottom:32px">
+      <p style="font-family:'JetBrains Mono',monospace;font-size:13px;line-height:1.8;color:#b3b3b3;margin-bottom:16px">What I'm fundamentally doing is exploring methods to find new and interesting music — and interesting ways to democratise the sharing of it, which I think needs to be reborn. Each curation is a snapshot of where I am in that exploration. When I've got a new one ready, I publish it here. You're welcome to join me on that journey — or go off and do something completely different with it.</p>
+
+      <p style="font-family:'JetBrains Mono',monospace;font-size:13px;line-height:1.8;color:#fff;margin-bottom:16px">There are three ways to engage with Meltify, all at zero cost:</p>
+
+      <p style="font-family:'JetBrains Mono',monospace;font-size:13px;line-height:1.8;color:#b3b3b3;margin-bottom:12px">As a <strong style="color:#fff">listener</strong> — play the station, molt any track you never want to hear again, melt any track you love into your own personal curation. Your curation builds up over time across all published curations. Transfer it between your phone and desktop using a simple code — no login, no account required.</p>
+
+      <p style="font-family:'JetBrains Mono',monospace;font-size:13px;line-height:1.8;color:#b3b3b3;margin-bottom:12px">As a <strong style="color:#fff">builder</strong> — clone Meltify and build your own station. See BYO for the full guide.</p>
+
+      <p style="font-family:'JetBrains Mono',monospace;font-size:13px;line-height:1.8;color:#b3b3b3;margin-bottom:16px">As a <strong style="color:#fff">developer</strong> — build your own scraping tools and methodologies for finding music across thousands of open source archives worldwide. Contact <a href="mailto:ross@peer.school" style="color:#1DB954;text-decoration:none">ross@peer.school</a> to get started.</p>
+
+
+    </div>
+
+    <button onclick="hideInfo()" style="background:#1DB954;color:#000;font-family:'JetBrains Mono',monospace;font-size:13px;font-weight:500;letter-spacing:0.08em;padding:14px 28px;border-radius:50px;border:none;cursor:pointer">start listening</button>
+  </div>
+</div>
+
+<!-- BUILD YOUR OWN PANEL -->
+<div id="myo-panel" style="display:none;max-width:640px;margin:0 auto;padding:40px 28px 80px">
+  <button onclick="hideMakeYourOwn()" style="font-family:var(--mono);font-size:11px;color:#1DB954;background:none;border:1px solid #1DB954;padding:4px 12px;border-radius:20px;cursor:pointer;margin-bottom:32px;letter-spacing:0.1em">← listen</button>
+
+  <h2 style="font-size:22px;font-weight:500;font-family:'JetBrains Mono',monospace;margin-bottom:24px;color:#fff;letter-spacing:0.05em;display:flex;align-items:center;gap:12px">
+    <svg width="28" height="28" viewBox="-8 0 116 100" xmlns="http://www.w3.org/2000/svg"><circle cx="50" cy="50" r="42" fill="none" stroke="#1DB954" stroke-width="14"/><line x1="-6" y1="50" x2="106" y2="50" stroke="#1DB954" stroke-width="14" stroke-linecap="round"/></svg>
+    Build Your Own
+  </h2>
+
+
+
+  <p style="font-size:15px;line-height:1.8;color:#b3b3b3;margin-bottom:20px;font-family:'JetBrains Mono',monospace">There are thousands of open music sources worldwide — from Archive.org to Bandcamp, netlabels across Europe and Japan, public domain archives, free jazz, experimental, classical, folk. There is no limit to where you can go with this.</p>
+
+  <p style="font-size:15px;line-height:1.8;color:#b3b3b3;margin-bottom:20px;font-family:'JetBrains Mono',monospace">I'll show you how to build your own curated radio station. This is also one of the best starter projects for anyone getting into building with AI. Clear goal, real outcome, something personal you can share immediately. No coding knowledge required. If you haven't made anything with AI yet, this is where to start.</p>
+
+  <p style="font-size:15px;line-height:1.8;color:#b3b3b3;margin-bottom:32px;font-family:'JetBrains Mono',monospace">Below you'll find a prompt you can copy and paste into Claude, ChatGPT or Gemini — all free. I built this in a day. You can probably do it in a few hours. It's going to be fun.</p>
+
+  <p style="font-size:15px;line-height:1.8;color:#b3b3b3;margin-bottom:20px;font-family:'JetBrains Mono',monospace">One prompt covers everything — from orientation right through to a working radio station. The AI starts by walking you through what you're building and why, then takes you through each stage one at a time. It covers what Supabase is (free), what Cloudflare Workers is (free), what Archive.org is (free), how the melt voting works, and the full build from start to finish. The only cost is a domain name — about €5. Estimated time: a few enjoyable hours.</p>
+
+  <p style="font-size:15px;line-height:1.8;color:#fff;margin-bottom:24px;font-family:'JetBrains Mono',monospace">One prompt. Copy it, paste it into Claude, ChatGPT or Gemini — all free at claude.ai, chatgpt.com or gemini.google.com. It walks you through everything.</p>
+
+  <p id="byo-install-hint" style="font-size:13px;line-height:1.8;color:#444;margin-bottom:24px;font-family:'JetBrains Mono',monospace;display:none"></p>
+
+  <!-- Hidden master prompt -->
+  <div id="master-prompt" style="display:none">I want to build my own personal curated radio station like meltify.org. Before we start, give me a quick orientation: Supabase is a free hosted database I can read and write from the browser using JavaScript fetch calls over HTTPS — no backend needed. Cloudflare Workers serves a single HTML file as a live website, free, auto-deploys from GitHub on every push. Archive.org has millions of free, legally streamable music tracks with an open API — no hosting costs, no API key required.
+
+Once I understand the stack, walk me through building it step by step. Start by asking me what I already have set up, then take me through one step at a time.
+
+---
+
+STEP 1 — SUPABASE
+
+Create a free Supabase project at supabase.com (sign in with GitHub). Once created, go to Settings → Data API and copy the Project URL and anon/public key — you will need both in every step.
+
+Run the following SQL in the Supabase SQL editor to create four tables:
+
+Table: tracks
+Columns: id (bigserial primary key), title (text), artist (text), album (text), url (text), duration (text), artwork (text), source (text), license (text)
+
+Table: melts
+Columns: id (bigserial primary key), user_id (text), track_url (text), artist (text), title (text), album (text), artwork (text), melted_at (timestamptz default now())
+
+Table: molts
+Columns: id (bigserial primary key), track_url (text), artist (text), molted_at (timestamptz default now())
+
+Table: user_curations
+Columns: id (bigserial primary key), user_id (text), track_url (text), artist (text), title (text), album (text), artwork (text), added_at (timestamptz default now())
+
+After creating the tables, go to Authentication → Policies and disable Row Level Security on all four tables so the browser can read and write without a login. This is safe because no personal data is stored.
+
+---
+
+STEP 2 — GITHUB AND CLOUDFLARE WORKERS
+
+Create a new empty GitHub repository. Create two files: index.html (the player) and config.js (credentials). In config.js write:
+
+const SUPABASE_URL = 'your-project-url';
+const SUPABASE_KEY = 'your-anon-key';
+const ADMIN_PASSWORD = 'choose-a-password';
+
+In Cloudflare, go to Workers & Pages → Create → Worker. Paste the following worker script which serves index.html:
+
+export default {
+  async fetch(request, env) {
+    const url = new URL(request.url);
+    if (url.pathname === '/config.js') {
+      return new Response(env.CONFIG_JS, { headers: { 'content-type': 'application/javascript' } });
+    }
+    return new Response(env.INDEX_HTML, { headers: { 'content-type': 'text/html' } });
+  }
+}
+
+Store your file contents as Worker environment variables named INDEX_HTML and CONFIG_JS. Connect your custom domain in the Worker settings. Every time you update the files, update the environment variables and redeploy.
+
+---
+
+STEP 3 — THE PLAYER (index.html)
+
+This is a single self-contained HTML file. No frameworks, no build step.
+
+Design system: pure black background #000000. Font: JetBrains Mono throughout — import from Google Fonts. Accent colour: #1DB954. Muted text: #6b6b6b. All panels are full-page replacements of the main player — nothing overlaps.
+
+Layout — mobile first, single column:
+
+ARTWORK AREA: full width, fixed height 260px on mobile, square aspect ratio on desktop. The artwork image is a CSS background-image, cover-fit, centred. Over it: a dark gradient scrim — transparent from 0% to 60%, then rapid drop to rgba(0,0,0,0.92) at 100% — sits between the image and the text overlay. Track title (white, 15px, bold), artist (green, 12px), album (grey, 11px) are absolutely positioned bottom-left of the artwork, over the scrim. A small ⓘ icon sits top-right of the artwork — 32px circle, semi-transparent black background — pulses with a soft green glow animation every 6 seconds (CSS keyframes). Tapping it opens the info overlay.
+
+PROGRESS BAR: below artwork, full width, 6px height, white fill on dark grey track, clickable anywhere to seek. Timestamps (current time / total duration) sit either side below the bar in 11px grey mono text.
+
+CONTROLS ROW: centred, three elements — prev · play/pause · skip. Play/pause is a 52px white circle with a black play or pause icon inside. Prev and skip are plain borderless text buttons, same 13px font size, grey colour. All three are vertically centred on the same row.
+
+MELT / MOLT ROW: directly below controls, two buttons side by side — melt and molt — same size as prev and skip, borderless text. Melt is green, molt is grey.
+
+INLINE FEEDBACK LINE: a single line of text directly below the melt/molt row. Hidden by default. On melt: fades in "melted into your curation ✓" in green. On duplicate melt: fades in "already in your curation" in grey. On molt: fades in "track molted ✓" in grey. Each fades out automatically after 1.8 seconds. Never stacks — always replaces previous message.
+
+FOOTER: stacked vertically, centred, generous bottom padding (60px minimum for mobile thumb space). Three plain text links: BYO · Curations · Privacy. No border above footer. Footer hides completely when any panel is open.
+
+---
+
+STEP 4 — LOADING AND PLAYING TRACKS
+
+On page load, fetch all tracks from Supabase. Supabase paginates at 1000 rows — loop using offset until fewer than 1000 rows are returned, then concatenate all results. Remove any tracks whose URL is in the localStorage molt list (key: meltify_molted, stored as JSON array of URLs). Shuffle the remaining tracks using Fisher-Yates. Store the shuffled array in memory.
+
+Do not call audio.play() on load — browsers block autoplay without a user gesture. Instead, prepare the first track (set audio.src, preload metadata) but wait for the user to tap play.
+
+When a track loads, update: artwork background-image, title, artist, album overlay text, progress bar reset to 0, timestamps reset to 0:00.
+
+Auto-skip on stream failure: if audio throws an error or does not start within 2.5 seconds, skip to the next track. Count consecutive auto-skips — stop auto-skipping after 4 in a row to avoid an infinite loop on a bad connection. Reset the counter when a track plays successfully.
+
+On track end (audio onended event), advance to next track in the shuffled array. Loop back to start when the end of the array is reached.
+
+---
+
+STEP 5 — MELT SYSTEM
+
+Melt adds the current track to the user's personal curation.
+
+FIRST TIME ONLY: if localStorage key meltify_melt_explained does not exist, show a bottom-sheet modal before doing anything else. The modal slides up from the bottom, dark background, explains: "Melt any track you love. It builds your personal curation — a playlist of everything you've melted, accessible on any device using your MELT code." One button: "Got it — melt this track". On dismiss, set meltify_melt_explained = 1 in localStorage, then proceed with the melt.
+
+MELT CODE: if localStorage key meltify_user_id does not exist, generate one now. Format: MELT- followed by 4 random uppercase characters from the set ABCDEFGHJKLMNPQRSTUVWXYZ23456789 (no O, 0, I, 1 to avoid confusion). Store in localStorage as meltify_user_id. Show the code to the user once in the melt modal on first generation: "Your curation code is MELT-XXXX — you only need this if you want to access your curation on another device."
+
+DUPLICATE CHECK: before saving, check if the current track URL already exists in localStorage key meltify_curation (JSON array of track objects). If it does, show "already in your curation" feedback and stop.
+
+SAVE LOCALLY: add the full track object (url, title, artist, album, artwork) to meltify_curation in localStorage.
+
+SAVE TO SUPABASE: POST to the melts table with fields: user_id (the MELT code), track_url, artist, title, album, artwork. This is a fire-and-forget call — use try/catch and fail silently if offline. Also POST to user_curations table with the same fields plus added_at timestamp.
+
+SHOW FEEDBACK: show "melted into your curation ✓" in green.
+
+---
+
+STEP 6 — MOLT SYSTEM
+
+Molt removes the current track permanently from this device's shuffle.
+
+FIRST TIME ONLY: if localStorage key meltify_molt_explained does not exist, show a bottom-sheet modal explaining: "Molting a track removes it from your radio forever on this device. It will never play again." One button: "Got it — molt this track". On dismiss, set meltify_molt_explained = 1, then proceed.
+
+SAVE LOCALLY: add the track URL to localStorage key meltify_molted (JSON array of URLs). Remove the track from the current in-memory shuffled array immediately so it cannot play again this session.
+
+SAVE TO SUPABASE: POST to the molts table with track_url and artist. Fire-and-forget, silent fail.
+
+SKIP TO NEXT: immediately advance to the next track.
+
+SHOW FEEDBACK: show "track molted ✓" in grey.
+
+Molted tracks are never synced between devices — the molt list lives only in the browser where it was created.
+
+---
+
+STEP 7 — INFO OVERLAY
+
+Opened by tapping the ⓘ icon on the artwork. Full screen, position fixed, z-index above everything, scrolls internally. Resets scroll to top every time it opens. Dark background #0a0a0a.
+
+Back button top-left: "← listen" — green, pill shaped border, closes the overlay and returns to the player.
+
+Content sections (vertically stacked, generous padding):
+
+1. Station description — 3 to 4 sentences describing what this radio station is and the kind of music in it. Write this yourself to describe your own station.
+
+2. Current curation — the name of the current artist or collection being featured, track count pulled live from the tracks array length, 2 to 3 sentences about the artist.
+
+3. Melt and molt explanation — one short paragraph: "Molt any track you never want to hear again. Melt any track you love and it builds your personal curation — play it any time from the Curations panel."
+
+4. About the curator — collapsed by default behind a toggle button "about the curator ↓". Expands to reveal: why you built this station, your philosophy around music discovery, and three levels of engagement available: listener (just listen), builder (build your own station using the BYO guide), developer (access the canvas tools to build scraping instruments and publish exhibitions).
+
+---
+
+STEP 8 — CURATIONS PANEL
+
+Opened by tapping Curations in the footer. Full-page replacement — player body hides, footer hides. Back button top-left returns to player.
+
+MY CURATION section:
+- Track count: "X tracks"
+- Scrollable track list (max-height 240px, overflow-y auto) showing each melted track: title bold, artist below in grey, × button on right to remove from curation (removes from localStorage meltify_curation array and from Supabase user_curations table where user_id matches)
+- PLAY MY CURATION button — green, full width, rounded. Closes the panel, switches the player into curation mode: replaces the shuffled array with the user's melted tracks array, reshuffles, plays from the start. A small indicator in the player shows "playing your curation" when in this mode. Tapping it again returns to the full station.
+- User's MELT code displayed in green mono text below the list with label "your curation code:" in grey. Note below in small grey text: "Only needed if you want to access your curation on another device — go to Curations to find it anytime."
+
+TRANSFER SECTION (collapsed by default on mobile, open on desktop):
+- Toggle link: "transfer to another device ↓" — tapping expands the section
+- Input field: placeholder "MELT-XXXX", uppercase, mono font
+- Button: "Load my curation" — queries Supabase user_curations where user_id matches the entered code, saves results to localStorage meltify_curation, sets meltify_user_id to the entered code, re-renders the curation list
+- Button: "Generate my code" — for users who have not melted yet and have no code — generates a MELT code using the same algorithm as Step 5 and saves to localStorage
+
+PREVIOUS section: heading "PREVIOUS", placeholder text "More curations coming soon." — reserved for future past exhibitions.
+
+---
+
+STEP 9 — BYO PANEL
+
+Opened by tapping BYO in the footer. Full-page replacement with back button.
+
+Opening paragraph: "I'll show you how to build your own curated radio station. Everything used to build this costs nothing except a domain name — about €5. Supabase (database), Cloudflare Workers (hosting), Archive.org (music) — all free. You copy one prompt, paste it into Claude, ChatGPT or Gemini, and follow the conversation."
+
+Then: a large copyable prompt block — this entire prompt — with a "Copy the prompt" green button. Use the Clipboard API: navigator.clipboard.writeText(). On success change the button text to "Copied ✓" for 2 seconds then revert.
+
+Closing lines: "Put in only artists you'd stand behind. Keep it small and honest. The whole thing costs nothing to run and about a day to build."
+
+Contact line: a link to your email for people who want a free account and scraping tools.
+
+---
+
+STEP 10 — PRIVACY PANEL
+
+Opened by tapping Privacy in the footer. Full-page replacement with back button.
+
+Content:
+
+"Nothing here knows who you are.
+
+Your curation builds up as you listen. It lives in your browser — no account needed, no code to remember. If you ever want to access your curation on a different device, go to Curations to find your code and enter it there.
+
+We use your browser's localStorage — not cookies. localStorage is a private storage area inside your browser that no external server can read remotely. Nothing stored there travels anywhere unless you choose to send it. Your molted tracks never leave your device. When you melt a track, your browser sends the track details and your anonymous MELT-XXXX code to our database over HTTPS — an encrypted connection. Nothing else is sent. No name, no email, no IP address, no identity of any kind.
+
+What stays in your browser: tracks you have molted, your MELT-XXXX code, your personal curation.
+
+What goes to our database: only when you melt a track — the track URL, artist name, title, album, and your anonymous MELT-XXXX code. The code is randomly generated in your browser and cannot be linked to any individual. We never see your name, email, IP address or any device information.
+
+GDPR: because no personally identifiable information is collected at any point, GDPR does not apply. A randomly generated code connected to a list of track URLs is not personal data."
+
+---
+
+STEP 11 — ADMIN PANEL (admin.html)
+
+A separate file, same visual style. Password protected — on load show a password prompt, check against the ADMIN_PASSWORD from config.js, only reveal the panel on correct entry.
+
+SEARCH: text input for artist name, Search button. On search, call the Archive.org advanced search API:
+https://archive.org/advancedsearch.php?q=creator:"ARTIST NAME" AND mediatype:audio&fl[]=identifier,title,creator&rows=50&output=json
+Show results as cards: identifier, title, creator, checkbox. Select all checkbox at top. Batch Add Selected button.
+
+BATCH ADD: for each selected identifier, fetch https://archive.org/metadata/IDENTIFIER/files — find all MP3 files (prefer source:original over source:derivative). For each MP3, fetch https://archive.org/metadata/IDENTIFIER to get title, creator, description. Insert a row into the tracks table via Supabase REST API. Show progress count as it runs.
+
+URL PASTE: a second input where you can paste any archive.org/details/IDENTIFIER URL directly and add all its tracks in one click.
+
+MANAGE TRACKS: shows all current tracks from Supabase in a scrollable list, filterable by artist or title text input. Each track has a Remove button (deletes from Supabase). Remove All Filtered button removes all matching the current filter. Changes are immediate — no separate save step.
+
+---
+
+IMPORTANT GOTCHAS
+
+Never open index.html directly from the file system (file:// protocol) — fetch calls to Supabase and Archive.org will be blocked by the browser's CORS policy. Always test through a local server (npx serve .) or your deployed Cloudflare URL.
+
+Supabase paginates results at 1000 rows. If your playlist has more than 1000 tracks, you must loop: fetch with range 0-999, then 1000-1999, and so on until a response returns fewer than 1000 rows.
+
+Browsers block audio autoplay. Never call audio.play() on page load. Wait for a user gesture (tap on play button) before playing anything.
+
+Archive.org streams are unreliable. Always implement the 2.5-second timeout auto-skip. Cap consecutive auto-skips at 4 to prevent infinite loops on a bad connection.
+
+Favicon files are aggressively cached. When you change the favicon, add ?v=2 to the link href in the HTML.
+
+The Supabase anon/public key is safe to include in client-side JavaScript — it is designed to be public. Never include the service role key in client code.
+
+For the MELT code generator, exclude the characters O, 0, I, and 1 from the character set to prevent visual confusion when users read or type their code.
+
+The only cost in this entire stack is a domain name — approximately €5 per year from Namecheap. Point its nameservers to Cloudflare and connect it to your Worker in the Cloudflare dashboard.</div>
+
+  <p style="font-size:14px;line-height:1.8;color:#b3b3b3;margin-bottom:24px;font-family:'JetBrains Mono',monospace">You need two things to get started. The prompt — paste it into any AI and it walks you through the whole build. And the companion guide — download it and keep it open beside you as you go. The guide explains what is happening at each stage, what to expect, and what to do if something goes wrong.</p>
+
+  <div style="display:flex;flex-direction:column;gap:12px;max-width:320px;margin:0 auto 40px">
+    <button onclick="copyMasterPrompt(this)" style="background:#1DB954;color:#000;font-family:'JetBrains Mono',monospace;font-size:13px;font-weight:500;letter-spacing:0.1em;padding:14px 28px;border-radius:50px;border:none;cursor:pointer;width:100%">Copy the prompt</button>
+    <button onclick="downloadGuide()" style="background:none;border:1px solid #1DB954;color:#1DB954;font-family:'JetBrains Mono',monospace;font-size:13px;letter-spacing:0.08em;padding:14px 28px;border-radius:50px;cursor:pointer;width:100%">Download the companion guide</button>
+    <a href="https://github.com/rrabette/meltify" target="_blank" style="background:none;border:1px solid #444;color:#b3b3b3;font-family:'JetBrains Mono',monospace;font-size:13px;letter-spacing:0.08em;padding:14px 28px;border-radius:50px;cursor:pointer;width:100%;text-align:center;text-decoration:none;box-sizing:border-box;display:block">View source on GitHub</a>
+  </div>
+
+  <p style="font-size:13px;line-height:1.8;color:#444;margin-bottom:40px;font-family:'JetBrains Mono',monospace;text-align:center">Paste the prompt into Claude, ChatGPT or Gemini — all free. Keep the guide open beside you.</p>
+
+  <p style="font-size:15px;line-height:1.8;color:#b3b3b3;margin-bottom:16px;font-family:'JetBrains Mono',monospace">Once you've built your station, contact Ross at peer.school. I'll set you up with a free account and show you how to build scraping tools to make your station much richer — finding music by genre, era, geography, mood, whatever direction you want to go. This is where it gets interesting.</p>
+
+  <p style="font-size:15px;margin-bottom:40px;font-family:'JetBrains Mono',monospace"><a href="mailto:ross@peer.school" style="color:#1DB954;text-decoration:none;letter-spacing:0.05em">ross@peer.school</a></p>
+
+  <button onclick="hideMakeYourOwn()" style="background:none;border:1px solid #1DB954;color:#1DB954;font-family:'JetBrains Mono',monospace;font-size:13px;letter-spacing:0.08em;padding:12px 28px;border-radius:50px;cursor:pointer">← back to listening</button>
+</div>
+
+<!-- PREVIOUS CURATIONS PANEL -->
+<div id="prev-panel" style="display:none;max-width:640px;width:100%;box-sizing:border-box;margin:0 auto;padding:40px 28px 80px;overflow-y:auto">
+  <button onclick="hidePrevious()" style="font-family:var(--mono);font-size:11px;color:#1DB954;background:none;border:1px solid #1DB954;padding:4px 12px;border-radius:20px;cursor:pointer;margin-bottom:32px;letter-spacing:0.1em">← listen</button>
+
+  <h2 style="font-size:22px;font-weight:500;font-family:'JetBrains Mono',monospace;margin-bottom:32px;color:#fff;letter-spacing:0.05em;display:flex;align-items:center;gap:12px">
+    <svg width="28" height="28" viewBox="-8 0 116 100" xmlns="http://www.w3.org/2000/svg"><circle cx="50" cy="50" r="42" fill="none" stroke="#1DB954" stroke-width="14"/><line x1="-6" y1="50" x2="106" y2="50" stroke="#1DB954" stroke-width="14" stroke-linecap="round"/></svg>
+    Curations
+  </h2>
+
+  <!-- My Curation -->
+  <div id="my-curation-section" style="margin-bottom:40px">
+    <h3 style="font-size:13px;font-weight:500;font-family:'JetBrains Mono',monospace;color:#1DB954;letter-spacing:0.1em;margin-bottom:16px;text-transform:uppercase">My Curation</h3>
+    <div id="my-curation-empty" style="font-family:'JetBrains Mono',monospace;font-size:13px;color:#444;line-height:1.8;margin-bottom:16px">You haven't melted any tracks yet. Hit <strong style="color:#1DB954">Melt</strong> on any track to start building your personal curation.</div>
+    <div id="my-curation-list" style="display:none">
+      <p id="my-curation-count" style="font-family:'JetBrains Mono',monospace;font-size:12px;color:#6b6b6b;margin-bottom:12px"></p>
+      <button onclick="playMyCuration()" style="background:#1DB954;color:#000;font-family:'JetBrains Mono',monospace;font-size:13px;font-weight:500;letter-spacing:0.08em;padding:12px 24px;border-radius:50px;border:none;cursor:pointer;margin-bottom:16px">Play My Curation</button>
+      <div id="my-curation-tracks" style="max-height:180px;overflow-y:auto;display:flex;flex-direction:column;gap:8px;margin-bottom:24px;padding-right:4px"></div>
+      <p style="font-family:'JetBrains Mono',monospace;font-size:11px;color:#444;margin-bottom:4px">Your curation code:</p>
+      <p id="my-curation-code" style="font-family:'JetBrains Mono',monospace;font-size:16px;color:#1DB954;letter-spacing:0.2em;margin-bottom:4px"></p>
+      <p style="font-family:'JetBrains Mono',monospace;font-size:11px;color:#444;margin-bottom:24px">Only needed if you want to move your curation to another device — go to Curations to find it anytime.</p>
+    </div>
+
+    <!-- Code entry for other devices -->
+    <div style="border-top:1px solid #282828;padding-top:20px;margin-top:8px">
+      <button id="transfer-toggle" onclick="toggleTransfer()" style="background:none;border:1px solid #444;color:#b3b3b3;font-family:'JetBrains Mono',monospace;font-size:12px;letter-spacing:0.08em;cursor:pointer;padding:10px 16px;border-radius:8px;width:100%;margin-bottom:12px;text-align:center">use on another device ↓</button>
+      <div id="transfer-section" style="display:none;flex-direction:column;gap:8px">
+        <input id="code-input" type="text" placeholder="MELT-XXXX" maxlength="9" style="width:100%;box-sizing:border-box;background:#111;border:1px solid #333;color:#fff;font-family:'JetBrains Mono',monospace;font-size:14px;letter-spacing:0.15em;padding:10px 14px;border-radius:8px;outline:none;text-transform:uppercase" />
+        <button onclick="loadCurationByCode()" style="background:none;border:1px solid #1DB954;color:#1DB954;font-family:'JetBrains Mono',monospace;font-size:12px;padding:10px 16px;border-radius:8px;cursor:pointer;width:100%">Load my curation</button>
+        <button onclick="generateCode()" id="generate-code-btn" style="background:none;border:1px solid #444;color:#b3b3b3;font-family:'JetBrains Mono',monospace;font-size:12px;padding:10px 16px;border-radius:8px;cursor:pointer;width:100%">Generate my code</button>
+        <p id="generated-code" style="font-family:'JetBrains Mono',monospace;font-size:16px;color:#1DB954;letter-spacing:0.2em;margin-top:4px;display:none"></p>
+      </div>
+      <p id="code-status" style="font-family:'JetBrains Mono',monospace;font-size:11px;color:#444;margin-top:8px"></p>
+    </div>
+  </div>
+
+  <!-- Previous curations -->
+  <h3 style="font-size:13px;font-weight:500;font-family:'JetBrains Mono',monospace;color:#6b6b6b;letter-spacing:0.1em;margin-bottom:16px;text-transform:uppercase">Previous</h3>
+  <p style="font-family:'JetBrains Mono',monospace;font-size:13px;color:#444;line-height:1.8">More curations coming soon.</p>
+</div>
+
+
+<!-- MELT MODAL (add to personal curation) -->
+<div class="action-modal" id="melt-modal">
+  <div class="action-modal-inner">
+    <h3>Melt this track</h3>
+    <p>This track will be added to your personal curation — <strong style="color:#fff">My Curation</strong>. It builds up as you listen, across any of our curations. Find it under Curations. Nothing is saved to any server. No login required. It lives in your browser.</p>
+    <p id="melt-code-display" style="display:none">Your curation code: <span class="action-modal-code" id="melt-code-value"></span><span style="font-family:var(--mono);font-size:11px;color:#6b6b6b">Only needed if you want to access your curation on another device.</span></p>
+    <div class="action-modal-btns">
+      <button class="action-confirm-btn" onclick="confirmMelt()">Melt it</button>
+      <button class="action-cancel-btn" onclick="cancelMelt()">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- MOLT MODAL (remove from curation) -->
+<div class="action-modal" id="molt-modal">
+  <div class="action-modal-inner">
+    <h3>Molt this track</h3>
+    <p id="molt-modal-text">This curation has <strong style="color:#fff">109 songs</strong>. Listen through it a few times and you'll hear everything. Molt this track and you'll never hear it again in this curation — your browser remembers.</p>
+    <div class="action-modal-btns">
+      <button class="action-confirm-btn" onclick="confirmMolt()">Molt it</button>
+      <button class="action-cancel-btn" onclick="cancelMolt()">Keep it</button>
+    </div>
+  </div>
+</div>
+
+<!-- DOWNLOAD PANEL -->
+<div id="download-panel" style="display:none;max-width:640px;margin:0 auto;padding:40px 28px 80px">
+  <button onclick="hideDownload()" style="font-family:var(--mono);font-size:11px;color:#1DB954;background:none;border:1px solid #1DB954;padding:4px 12px;border-radius:20px;cursor:pointer;margin-bottom:32px;letter-spacing:0.1em">← listen</button>
+
+  <h2 style="font-size:22px;font-weight:500;font-family:'JetBrains Mono',monospace;margin-bottom:32px;color:#fff;letter-spacing:0.05em;display:flex;align-items:center;gap:12px">
+    <svg width="28" height="28" viewBox="-8 0 116 100" xmlns="http://www.w3.org/2000/svg"><circle cx="50" cy="50" r="42" fill="none" stroke="#1DB954" stroke-width="14"/><line x1="-6" y1="50" x2="106" y2="50" stroke="#1DB954" stroke-width="14" stroke-linecap="round"/></svg>
+    Download
+  </h2>
+
+  <p style="font-size:15px;line-height:1.8;color:#b3b3b3;margin-bottom:32px;font-family:'JetBrains Mono',monospace">Install Meltify as an app on your device — no app store needed. It runs directly from the browser and works like a native app once installed.</p>
+
+  <h3 style="font-size:13px;font-weight:500;font-family:'JetBrains Mono',monospace;color:#1DB954;letter-spacing:0.1em;margin-bottom:16px;text-transform:uppercase">On Desktop</h3>
+  <p style="font-size:14px;line-height:1.8;color:#b3b3b3;margin-bottom:32px;font-family:'JetBrains Mono',monospace">Open meltify.org in Chrome or Edge. Look for the install icon in the address bar — it looks like a small screen with a down arrow. Click it and select <strong style="color:#fff">Install</strong>. Meltify will appear in your taskbar and open as a standalone app.</p>
+
+  <h3 style="font-size:13px;font-weight:500;font-family:'JetBrains Mono',monospace;color:#1DB954;letter-spacing:0.1em;margin-bottom:16px;text-transform:uppercase">On Android</h3>
+  <p style="font-size:14px;line-height:1.8;color:#b3b3b3;margin-bottom:32px;font-family:'JetBrains Mono',monospace">Open meltify.org in <strong style="color:#fff">Google Chrome</strong> — not the built-in browser. Tap the three-dot menu and select <strong style="color:#fff">Add to Home Screen</strong>. Meltify will appear on your home screen like any other app.</p>
+
+  <h3 style="font-size:13px;font-weight:500;font-family:'JetBrains Mono',monospace;color:#1DB954;letter-spacing:0.1em;margin-bottom:16px;text-transform:uppercase">On iPhone</h3>
+  <p style="font-size:14px;line-height:1.8;color:#b3b3b3;margin-bottom:40px;font-family:'JetBrains Mono',monospace">Open meltify.org in <strong style="color:#fff">Safari</strong>. Tap the share icon at the bottom of the screen — the square with an arrow pointing up. Scroll down and tap <strong style="color:#fff">Add to Home Screen</strong>. Meltify will appear on your home screen.</p>
+
+  <button onclick="hideDownload()" style="background:none;border:1px solid #1DB954;color:#1DB954;font-family:'JetBrains Mono',monospace;font-size:13px;letter-spacing:0.08em;padding:12px 28px;border-radius:50px;cursor:pointer">← back to listening</button>
+</div>
+
+<!-- PRIVACY PANEL -->
+<div id="privacy-panel" style="display:none;max-width:640px;width:100%;box-sizing:border-box;margin:0 auto;padding:40px 28px 80px">
+  <button onclick="hidePrivacy()" style="font-family:var(--mono);font-size:11px;color:#1DB954;background:none;border:1px solid #1DB954;padding:4px 12px;border-radius:20px;cursor:pointer;margin-bottom:32px;letter-spacing:0.1em">← listen</button>
+
+  <h2 style="font-size:22px;font-weight:500;font-family:'JetBrains Mono',monospace;margin-bottom:32px;color:#fff;letter-spacing:0.05em;display:flex;align-items:center;gap:12px">
+    <svg width="28" height="28" viewBox="-8 0 116 100" xmlns="http://www.w3.org/2000/svg"><circle cx="50" cy="50" r="42" fill="none" stroke="#1DB954" stroke-width="14"/><line x1="-6" y1="50" x2="106" y2="50" stroke="#1DB954" stroke-width="14" stroke-linecap="round"/></svg>
+    Privacy
+  </h2>
+
+  <p style="font-size:15px;line-height:1.8;color:#fff;margin-bottom:24px;font-family:'JetBrains Mono',monospace">Nothing here knows who you are.</p>
+
+  <p style="font-size:14px;line-height:1.8;color:#b3b3b3;margin-bottom:24px;font-family:'JetBrains Mono',monospace">Molted tracks stay in your browser and never leave. Your curation builds up as you listen. It lives in your browser — no account needed, no code to remember. If you ever want to access your curation on a different device, go to Curations to find your code and enter it there.</p>
+
+  <p style="font-size:14px;line-height:1.8;color:#b3b3b3;margin-bottom:32px;font-family:'JetBrains Mono',monospace">No cookies. No tracking. No analytics. We couldn't identify you from what we store even if we wanted to.</p>
+
+  <p style="font-size:14px;line-height:1.8;color:#b3b3b3;margin-bottom:32px;font-family:'JetBrains Mono',monospace">We use your browser's localStorage — not cookies. localStorage is a private storage area inside your browser that no external server can read remotely. Nothing stored there travels anywhere unless you choose to send it. Your molted tracks never leave your device. When you melt a track, your browser sends the track details and your anonymous MELT-XXXX code to our database over HTTPS — an encrypted connection. Nothing else is sent. No name, no email, no IP address, no identity of any kind.</p>
+
+  <h3 style="font-size:13px;font-weight:500;font-family:'JetBrains Mono',monospace;color:#1DB954;letter-spacing:0.1em;margin-bottom:16px;text-transform:uppercase">What stays in your browser</h3>
+  <p style="font-size:14px;line-height:2;color:#b3b3b3;margin-bottom:32px;font-family:'JetBrains Mono',monospace">
+    — Tracks you have molted<br>
+    — Your MELT-XXXX code<br>
+    — Your personal curation
+  </p>
+
+  <h3 style="font-size:13px;font-weight:500;font-family:'JetBrains Mono',monospace;color:#1DB954;letter-spacing:0.1em;margin-bottom:16px;text-transform:uppercase">What goes to our database</h3>
+  <p style="font-size:14px;line-height:1.8;color:#b3b3b3;margin-bottom:32px;font-family:'JetBrains Mono',monospace">Only if you melt a track — the track URL, artist name, title, and your anonymous MELT-XXXX code. Nothing else. The code is randomly generated in your browser and is not linked to any identity. We never see your name, email, IP address or any device information.</p>
+
+  <h3 style="font-size:13px;font-weight:500;font-family:'JetBrains Mono',monospace;color:#1DB954;letter-spacing:0.1em;margin-bottom:16px;text-transform:uppercase">GDPR</h3>
+  <p style="font-size:14px;line-height:1.8;color:#b3b3b3;margin-bottom:40px;font-family:'JetBrains Mono',monospace">Because no personally identifiable information is collected at any point, GDPR technically does not apply. A randomly generated code connected to a list of track URLs is not personal data. There is no way to link what we store to any individual.</p>
+
+  <button onclick="hidePrivacy()" style="background:none;border:1px solid #1DB954;color:#1DB954;font-family:'JetBrains Mono',monospace;font-size:13px;letter-spacing:0.08em;padding:12px 28px;border-radius:50px;cursor:pointer">← back to listening</button>
+</div>
+
+<div class="body">
+  <div class="player-side">
+    <div class="artwork">
+      <div class="info-icon" onclick="showInfo()">i</div>
+      <img class="artwork-img" id="artwork-img" src="" alt="" onload="this.classList.add('loaded')" onerror="this.style.display='none'" />
+      <div class="artwork-bg"></div>
+      <div class="artwork-rings" id="rings"></div>
+      <div class="artwork-label">
+        <div class="artwork-track" id="np-title">—</div>
+        <div class="artwork-artist" id="np-artist">meltify radio</div>
+        <div class="artwork-album" id="np-album"></div>
+      </div>
+    </div>
+
+    <div class="progress-wrap">
+      <div class="progress-bar" id="prog-bar" onclick="seekTo(event)">
+        <div class="progress-fill" id="prog-fill"></div>
+      </div>
+      <div class="progress-times">
+        <span id="t-cur">0:00</span>
+        <span id="t-dur">0:00</span>
+      </div>
+    </div>
+
+    <div class="controls">
+      <button class="prev-btn" onclick="prevTrack()">prev</button>
+      <button class="play-btn" id="play-btn" onclick="togglePlay()">
+        <div class="play-icon" id="play-icon"></div>
+      </button>
+      <button class="skip-btn" onclick="skipTrack()">skip</button>
+    </div>
+
+    <div class="block-btns" id="block-btns">
+      <button class="block-current-btn" onclick="handleMelt()" title="melt into your curation" id="melt-btn">melt</button>
+      <button class="block-current-btn" onclick="handleMolt()" title="molt from this curation" id="molt-btn">molt</button>
+    </div>
+    <div id="melt-feedback" style="font-family:var(--mono);font-size:11px;color:#1DB954;text-align:center;height:16px;letter-spacing:0.1em;transition:opacity 0.4s;opacity:0"></div>
+
+    <div class="desktop-hint"></div>
+
+    <div class="track-meta">
+      <div class="meta-label">licence</div>
+      <div class="meta-license" id="meta-lic">—</div>
+      <a class="meta-link" id="meta-src" href="#" target="_blank"></a>
+    </div>
+
+    <div class="blocked-panel" id="blocked-panel" style="display:none">
+      <div class="blocked-panel-label">melted</div>
+      <div class="blocked-tags" id="blocked-tags"></div>
+    </div>
+  </div>
+
+  <div class="tracklist-side">
+    <div class="tracklist-header">
+      <span class="tracklist-title">playlist</span>
+      <span class="tracklist-count" id="pl-count"></span>
+    </div>
+    <div class="tracklist" id="tracklist"></div>
+    <div class="statusbar" id="statusbar"></div>
+  </div>
+</div>
+
+<div class="site-footer">
+  <a href="#" onclick="showMakeYourOwn();return false;" class="footer-link">BYO</a>
+  <a href="#" onclick="showPrevious();return false;" class="footer-link">Curations</a>
+  <a href="#" onclick="showDownload();return false;" class="footer-link">Download</a>
+  <a href="#" onclick="showPrivacy();return false;" class="footer-link">Privacy</a>
+</div>
+
+<audio id="audio" onended="skipTrack()" ontimeupdate="onTimeUpdate()"></audio>
+
+<script>
+let playlist = [], shuffled = [], currentIndex = -1, isPlaying = false;
+let blocked = JSON.parse(localStorage.getItem('meltify_blocked') || '[]');
+let blockedTracks = JSON.parse(localStorage.getItem('meltify_blocked_tracks') || '[]');
+
+let autoSkipCount = 0;
+const MAX_AUTO_SKIPS = 4;
+
+async function init() {
+  setStatus('loading playlist...');
+  try {
+    let all = [];
+    let from = 0;
+    const pageSize = 1000;
+    while (true) {
+      const r = await fetch(SUPABASE_URL + '/rest/v1/tracks?select=*&order=id.asc&limit=' + pageSize + '&offset=' + from, {
+        headers: { 'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + SUPABASE_KEY }
+      });
+      const page = await r.json();
+      if (!page.length) break;
+      all = all.concat(page);
+      if (page.length < pageSize) break;
+      from += pageSize;
+    }
+    playlist = all;
+    const filtered = playlist.filter(t => !blocked.includes(t.artist) && !blockedTracks.includes(t.url));
+    shuffled = shuffle([...filtered]);
+    document.getElementById('pl-count').textContent = shuffled.length + ' tracks';
+    renderList();
+    setStatus('ready — ' + shuffled.length + ' tracks loaded');
+    if (shuffled.length) prepareTrack(Math.floor(Math.random() * shuffled.length));
+  } catch(e) {
+    setStatus('could not load playlist — ' + e.message, true);
+  }
+}
+
+function shuffle(arr) {
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
+}
+
+function renderList() {
+  const list = document.getElementById('tracklist');
+  list.innerHTML = '';
+  shuffled.forEach((t, i) => {
+    const row = document.createElement('div');
+    row.className = 'track-row' + (i === currentIndex ? ' active' : '');
+    row.id = 'tr-' + i;
+    row.innerHTML = `
+      <span class="tr-num">${i + 1}</span>
+      <div class="tr-playing">
+        <div class="eq-bar"></div>
+        <div class="eq-bar"></div>
+        <div class="eq-bar"></div>
+      </div>
+      <div class="tr-info">
+        <div class="tr-title">${esc(t.title)}</div>
+        <div class="tr-artist">${esc(t.artist)}</div>
+        ${t.album ? `<div class="tr-album">${esc(t.album)}</div>` : ''}
+      </div>
+      <span class="tr-dur">${t.duration || ''}</span>
+      <button class="tr-block" onclick="blockArtist('${esc(t.artist)}', event)" title="melt this track">melt</button>
+    `;
+    row.addEventListener('click', () => playTrack(i));
+    list.appendChild(row);
+  });
+}
+
+function prepareTrack(i) {
+  if (i < 0 || i >= shuffled.length) return;
+  currentIndex = i;
+  const t = shuffled[i];
+  audio.src = t.url;
+  document.getElementById('np-title').textContent = t.title;
+  document.getElementById('np-artist').textContent = t.artist;
+  document.getElementById('np-album').textContent = t.album || '';
+  document.getElementById('meta-lic').textContent = t.license || 'Creative Commons';
+  const src = document.getElementById('meta-src');
+  if (t.source) { src.href = t.source; src.textContent = t.source; }
+  else { src.href = '#'; src.textContent = ''; }
+  const footerLic = document.getElementById('footer-licence');
+  if (footerLic) { footerLic.href = t.source || '#'; footerLic.style.display = t.source ? 'inline' : 'none'; }
+  const img = document.getElementById('artwork-img');
+  if (t.artwork) { img.classList.remove('loaded'); img.style.display = ''; img.src = t.artwork; }
+  else { img.src = ''; img.style.display = 'none'; }
+  document.getElementById('block-btns').style.display = 'flex';
+  document.getElementById('prog-fill').style.width = '0%';
+  document.getElementById('t-cur').textContent = '0:00';
+  document.getElementById('t-dur').textContent = t.duration || '0:00';
+  updateRings();
+  renderList();
+}
+
+function playTrack(i) {
+  if (i < 0 || i >= shuffled.length) return;
+  currentIndex = i;
+  const t = shuffled[i];
+  audio.src = t.url;
+  audio.play().then(() => {
+    isPlaying = true;
+    autoSkipCount = 0;
+    updatePlayBtn();
+    updateLive(true);
+    setStatus('playing: ' + t.title + ' — ' + t.artist);
+  }).catch(err => {
+    setStatus('stream error — trying next track...', true);
+    autoSkipCount++;
+    if (autoSkipCount > MAX_AUTO_SKIPS) {
+      autoSkipCount = 0;
+      setStatus('several streams failed — tap skip to try again', true);
+      return;
+    }
+    setTimeout(skipTrack, 2500);
+  });
+
+  document.getElementById('np-title').textContent = t.title;
+  document.getElementById('np-artist').textContent = t.artist;
+  document.getElementById('np-album').textContent = t.album || '';
+  document.getElementById('meta-lic').textContent = t.license || 'Creative Commons';
+  const src = document.getElementById('meta-src');
+  if (t.source) { src.href = t.source; src.textContent = t.source; }
+  else { src.href = '#'; src.textContent = ''; }
+  const footerLic = document.getElementById('footer-licence');
+  if (footerLic) { footerLic.href = t.source || '#'; footerLic.style.display = t.source ? 'inline' : 'none'; }
+  const img = document.getElementById('artwork-img');
+  if (t.artwork) { img.classList.remove('loaded'); img.style.display = ''; img.src = t.artwork; }
+  else { img.src = ''; img.style.display = 'none'; }
+  const bb = document.getElementById('block-btns');
+  bb.style.display = 'flex';
+
+  document.getElementById('prog-fill').style.width = '0%';
+  document.getElementById('t-cur').textContent = '0:00';
+  document.getElementById('t-dur').textContent = t.duration || '0:00';
+
+  updateRings();
+  renderList();
+  const el = document.getElementById('tr-' + i);
+  if (el) el.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+}
+
+function togglePlay() {
+  if (!audio.src && shuffled.length) { playTrack(0); return; }
+  if (isPlaying) { audio.pause(); isPlaying = false; updateLive(false); }
+  else { audio.play(); isPlaying = true; updateLive(true); }
+  updatePlayBtn();
+}
+
+function skipTrack() {
+  if (!shuffled.length) return;
+  autoSkipCount = 0;
+  const next = currentIndex + 1 >= shuffled.length ? 0 : currentIndex + 1;
+  playTrack(next);
+}
+
+function prevTrack() {
+  if (!shuffled.length) return;
+  const prev = currentIndex - 1 < 0 ? shuffled.length - 1 : currentIndex - 1;
+  playTrack(prev);
+}
+
+function updatePlayBtn() {
+  const icon = document.getElementById('play-icon');
+  if (isPlaying) {
+    icon.className = '';
+    icon.innerHTML = '<div class="pause-icon"><div class="pause-bar"></div><div class="pause-bar"></div></div>';
+  } else {
+    icon.className = 'play-icon';
+    icon.innerHTML = '';
+  }
+}
+
+function updateLive(playing) {
+  const dot = document.getElementById('live-dot');
+  if (dot) dot.className = 'live-dot' + (playing ? ' playing' : '');
+}
+
+function onTimeUpdate() {
+  if (!audio.duration) return;
+  const pct = (audio.currentTime / audio.duration) * 100;
+  document.getElementById('prog-fill').style.width = pct.toFixed(2) + '%';
+  document.getElementById('t-cur').textContent = fmtTime(audio.currentTime);
+  if (audio.duration) document.getElementById('t-dur').textContent = fmtTime(audio.duration);
+}
+
+function seekTo(e) {
+  if (!audio.duration) return;
+  const bar = document.getElementById('prog-bar');
+  const rect = bar.getBoundingClientRect();
+  audio.currentTime = ((e.clientX - rect.left) / rect.width) * audio.duration;
+}
+
+function fmtTime(s) {
+  const m = Math.floor(s / 60);
+  const sec = Math.floor(s % 60);
+  return m + ':' + String(sec).padStart(2, '0');
+}
+
+function updateRings() {
+  const container = document.getElementById('rings');
+  container.innerHTML = '';
+  const sizes = [60, 110, 170, 240, 320];
+  sizes.forEach((s, i) => {
+    const ring = document.createElement('div');
+    ring.className = 'ring';
+    ring.style.cssText = `width:${s}px;height:${s}px;animation:breathe ${4 + i * 1.5}s ease-in-out infinite alternate;animation-delay:${i * 0.4}s`;
+    container.appendChild(ring);
+  });
+}
+
+function esc(s) {
+  return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+function blockCurrent() {
+  if (currentIndex < 0 || currentIndex >= shuffled.length) return;
+  blockArtist(shuffled[currentIndex].artist);
+}
+
+async function logMelt(trackUrl, artist) {
+  try {
+    await fetch(SUPABASE_URL + '/rest/v1/melts', {
+      method: 'POST',
+      headers: {
+        'apikey': SUPABASE_KEY,
+        'Authorization': 'Bearer ' + SUPABASE_KEY,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ track_url: trackUrl, artist: artist })
+    });
+  } catch(e) { /* silent fail */ }
+}
+
+function blockCurrentTrack() {
+  if (currentIndex < 0 || currentIndex >= shuffled.length) return;
+  const t = shuffled[currentIndex];
+  if (blockedTracks.includes(t.url)) return;
+  logMelt(t.url, t.artist);
+  blockedTracks.push(t.url);
+  localStorage.setItem('meltify_blocked_tracks', JSON.stringify(blockedTracks));
+  shuffled.splice(currentIndex, 1);
+  document.getElementById('pl-count').textContent = shuffled.length + ' tracks';
+  audio.pause(); isPlaying = false; updatePlayBtn(); updateLive(false);
+  document.getElementById('block-btns').style.display = 'none';
+  currentIndex = currentIndex >= shuffled.length ? 0 : currentIndex;
+  if (shuffled.length) setTimeout(() => playTrack(currentIndex), 400);
+  renderList();
+}
+
+function blockArtist(name, e) {
+  if (e) { e.stopPropagation(); }
+  if (!name || blocked.includes(name)) return;
+  logMelt(null, name);
+  blocked.push(name);
+  localStorage.setItem('meltify_blocked', JSON.stringify(blocked));
+  const wasPlaying = shuffled[currentIndex]?.artist === name;
+  shuffled = shuffled.filter(t => t.artist !== name);
+  document.getElementById('pl-count').textContent = shuffled.length + ' tracks';
+  if (wasPlaying) {
+    audio.pause(); isPlaying = false; updatePlayBtn(); updateLive(false);
+    document.getElementById('np-title').textContent = '—';
+    document.getElementById('np-artist').textContent = 'artist blocked';
+    document.getElementById('block-btns').style.display = 'none';
+    currentIndex = -1;
+    if (shuffled.length) setTimeout(() => playTrack(0), 600);
+  } else {
+    currentIndex = shuffled.findIndex((t, i) => i === currentIndex);
+  }
+  renderList();
+  renderBlocked();
+}
+
+function unblockArtist(name) {
+  blocked = blocked.filter(a => a !== name);
+  localStorage.setItem('meltify_blocked', JSON.stringify(blocked));
+  const reAdded = playlist.filter(t => t.artist === name);
+  shuffled = shuffle([...shuffled, ...reAdded]);
+  document.getElementById('pl-count').textContent = shuffled.length + ' tracks';
+  renderList();
+  renderBlocked();
+}
+
+function renderBlocked() {
+  const panel = document.getElementById('blocked-panel');
+  const tags = document.getElementById('blocked-tags');
+  if (!blocked.length) { panel.style.display = 'none'; return; }
+  panel.style.display = 'block';
+  tags.innerHTML = '';
+  blocked.forEach(name => {
+    const tag = document.createElement('div');
+    tag.className = 'blocked-tag';
+    tag.innerHTML = `<span>${esc(name)}</span><button onclick="unblockArtist('${esc(name)}')">&#215;</button>`;
+    tags.appendChild(tag);
+  });
+}
+
+function setStatus(msg, isErr) {
+  const s = document.getElementById('statusbar');
+  s.textContent = msg;
+  s.className = 'statusbar' + (isErr ? ' err' : '');
+}
+
+// User ID and curation management
+function getUserId() {
+  let id = localStorage.getItem('meltify_user_id');
+  if (!id) {
+    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+    let code = 'MELT-';
+    for (let i = 0; i < 4; i++) code += chars[Math.floor(Math.random() * chars.length)];
+    id = code;
+    localStorage.setItem('meltify_user_id', id);
+  }
+  return id;
+}
+
+function getMyCuration() {
+  return JSON.parse(localStorage.getItem('meltify_my_curation') || '[]');
+}
+
+async function saveMeltToSupabase(track) {
+  const userId = getUserId();
+  try {
+    await fetch(SUPABASE_URL + '/rest/v1/user_curations', {
+      method: 'POST',
+      headers: {
+        'apikey': SUPABASE_KEY,
+        'Authorization': 'Bearer ' + SUPABASE_KEY,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        user_id: userId,
+        track_url: track.url,
+        artist: track.artist,
+        title: track.title,
+        album: track.album || '',
+        artwork: track.artwork || ''
+      })
+    });
+  } catch(e) { /* silent fail */ }
+}
+
+// MELT — add to personal curation
+function handleMelt() {
+  if (!localStorage.getItem('meltify_melt_explained')) {
+    const isNew = !localStorage.getItem('meltify_user_id');
+    if (isNew) {
+      const code = getUserId();
+      document.getElementById('melt-code-value').textContent = code;
+      document.getElementById('melt-code-display').style.display = 'block';
+    }
+    document.getElementById('melt-modal').style.display = 'flex';
+  } else {
+    doMelt();
+  }
+}
+
+function confirmMelt() {
+  localStorage.setItem('meltify_melt_explained', '1');
+  document.getElementById('melt-modal').style.display = 'none';
+  doMelt();
+}
+
+function cancelMelt() {
+  document.getElementById('melt-modal').style.display = 'none';
+}
+
+function showFeedback(msg, color) {
+  const el = document.getElementById('melt-feedback');
+  if (!el) return;
+  el.textContent = msg;
+  el.style.color = color || '#1DB954';
+  el.style.opacity = '1';
+  setTimeout(() => el.style.opacity = '0', 1600);
+}
+
+function doMelt() {
+  if (currentIndex < 0 || currentIndex >= shuffled.length) return;
+  const t = shuffled[currentIndex];
+  const curation = getMyCuration();
+  if (curation.find(x => x.url === t.url)) {
+    showFeedback('already in your curation', '#6b6b6b');
+    return;
+  }
+  curation.push({ url: t.url, artist: t.artist, title: t.title, album: t.album || '', artwork: t.artwork || '' });
+  localStorage.setItem('meltify_my_curation', JSON.stringify(curation));
+  saveMeltToSupabase(t);
+  showFeedback('melted into your curation ✓', '#1DB954');
+}
+
+// MOLT — remove from current curation
+function handleMolt() {
+  if (!localStorage.getItem('meltify_molt_explained')) {
+    const count = shuffled.length;
+    document.getElementById('molt-modal-text').innerHTML =
+      `This curation has <strong style="color:#fff">${count} songs</strong>. Listen through it a few times and you'll hear everything. Molt this track and you'll never hear it again in this curation — your browser remembers.`;
+    document.getElementById('molt-modal').style.display = 'flex';
+  } else {
+    doMolt();
+  }
+}
+
+function confirmMolt() {
+  localStorage.setItem('meltify_molt_explained', '1');
+  document.getElementById('molt-modal').style.display = 'none';
+  doMolt();
+}
+
+function cancelMolt() {
+  document.getElementById('molt-modal').style.display = 'none';
+}
+
+function doMolt() {
+  showFeedback('track molted ✓', '#b3b3b3');
+  document.getElementById('block-btns').style.visibility = 'hidden';
+  setTimeout(() => {
+    blockCurrentTrack();
+    document.getElementById('block-btns').style.visibility = 'visible';
+  }, 50);
+}
+
+function toggleCurator() {
+  const section = document.getElementById('curator-section');
+  const arrow = document.getElementById('curator-arrow');
+  const btn = document.getElementById('curator-toggle');
+  const isOpen = section.style.display !== 'none';
+  section.style.display = isOpen ? 'none' : 'block';
+  arrow.textContent = isOpen ? '▶' : '▼';
+  btn.style.color = isOpen ? '#444' : '#b3b3b3';
+}
+
+function downloadGuide() {
+  const text = '# Build Your Own Radio Station\n## A companion guide to the Meltify prompt\n\nThis document walks you through building your own curated radio station from zero. It is designed to be used alongside the prompt you copied from meltify.org — paste that prompt into Claude, ChatGPT or Gemini and keep this document open beside it. The AI does the building. This document helps you understand what is happening at each stage, what to expect, and what to do if something goes wrong.\n\nThe total cost is approximately €5 for a domain name. Everything else is free.\n\n---\n\n## Before you start\n\nYou need four accounts. All are free. Sign up for all four before you begin — it saves time later.\n\n**Supabase** — supabase.com — your database. Sign in with GitHub. This is where your music playlist and user curations are stored. The browser talks directly to Supabase using fetch calls over HTTPS — you do not need a server.\n\n**GitHub** — github.com — where your code lives. Every time you push a change, your site updates automatically within seconds.\n\n**Cloudflare** — cloudflare.com — where your site is hosted. A Cloudflare Worker serves your single HTML file as a live website on your custom domain. Free tier is more than enough.\n\n**Namecheap** — namecheap.com — where you buy your domain name. Approximately €5 per year. After buying, you will point the nameservers to Cloudflare.\n\nOnce you have all four accounts, paste the prompt into your AI and tell it you are ready to begin.\n\n---\n\n## Stage 1 — Set up Supabase\n\n**What you are doing:** creating a free database with four tables that the player will read from and write to.\n\n**What to expect:** the AI will ask you to create a project at supabase.com, then give you SQL to run in the Supabase SQL editor. You copy and paste the SQL exactly as given and click Run.\n\n**The four tables:**\n\n- `tracks` — every song in your radio station. The AI will populate this later through the admin panel.\n- `melts` — a log of every track any listener has melted, stored against their anonymous MELT code.\n- `molts` — a log of every track that has been molted (removed permanently from a device\'s shuffle).\n- `user_curations` — each listener\'s personal collection of melted tracks, queryable by their MELT code.\n\n**What you need to copy and save:** after creating the project, go to Settings → Data API. Copy and save your Project URL and your anon/public key. You will need both in every step that follows. Keep them in a text file.\n\n**Disabling Row Level Security:** the AI will ask you to go to Authentication → Policies and disable Row Level Security on all four tables. Do this. It is safe here because none of your tables store personal data — only track URLs, anonymous codes, and artist names.\n\n**You are done with Stage 1 when:** all four tables exist in Supabase, Row Level Security is disabled on all four, and you have your Project URL and anon key saved somewhere.\n\n---\n\n## Stage 2 — Set up GitHub and Cloudflare Workers\n\n**What you are doing:** creating a home for your code and a live URL for your station.\n\n**GitHub:** create a new empty repository. Give it any name — something like `my-radio` works fine. Do not initialise it with a README. The AI will tell you exactly what files to create.\n\n**config.js:** the AI will ask you to create a file called `config.js` containing your Supabase URL, your Supabase anon key, and an admin password of your choosing. This file stays out of your main HTML and keeps your credentials separate. The Supabase anon key is safe to include here — it is designed to be public and only allows the operations you have set up. Never use your Supabase service role key in any client-side file.\n\n**Cloudflare Workers:** in Cloudflare, go to Workers & Pages → Create → Worker. The AI will give you a short worker script to paste in. This script reads your HTML and config files from environment variables and serves them as a website. After pasting the script, you will store your `index.html` and `config.js` contents as environment variables named `INDEX_HTML` and `CONFIG_JS`.\n\n**Connecting your domain:** in Cloudflare, add your domain (bought from Namecheap), go to the DNS settings, and set Namecheap\'s nameservers to point to Cloudflare. The AI can walk you through this. Then connect the domain to your Worker in the Worker settings. It takes up to 24 hours to propagate but is usually a few minutes.\n\n**You are done with Stage 2 when:** you can open your domain in a browser and see a page load (even if it is blank or shows an error — as long as it loads from your domain, the plumbing is working).\n\n---\n\n## Stage 3 — Build the player\n\n**What you are doing:** building the main HTML file that is your entire radio station — the player, all panels, all logic, in one file.\n\n**What to expect:** the AI will write a large single HTML file. This is normal. The whole station is self-contained with no external dependencies except JetBrains Mono from Google Fonts and your Supabase database.\n\n**The design:** pure black background, JetBrains Mono font, green accent (#1DB954). The artwork fills the top of the screen. Track info overlays the artwork. Below it: a progress bar, then controls (prev · play · skip), then the melt and molt buttons, then a footer with three links (BYO · Curations · Privacy).\n\n**How panels work:** every section of the site — info overlay, curations, BYO, privacy — is a full-page panel that replaces the player entirely when opened. The footer disappears when a panel is open. A back button returns to the player. Nothing overlaps.\n\n**Testing locally:** do not open index.html by double-clicking it. File:// protocol blocks all fetch calls. To test locally, open a terminal in your project folder and run:\n```\nnpx serve .\n```\nThen open http://localhost:3000 in your browser.\n\n**Deploying:** copy the contents of your index.html into the `INDEX_HTML` environment variable in your Cloudflare Worker and redeploy. The AI will remind you to do this each time.\n\n**You are done with Stage 3 when:** your domain shows the player UI — black screen, artwork area, controls visible, footer with three links.\n\n---\n\n## Stage 4 — Add music through the admin panel\n\n**What you are doing:** building admin.html, a separate password-protected page where you search Archive.org and add tracks to your Supabase database.\n\n**Archive.org:** this is the Internet Archive — a non-profit library of millions of freely and legally streamable music files. Many artists have uploaded their full catalogues. The Archive.org API is completely open — no API key, no signup, no cost.\n\n**How the admin panel works:**\n\n1. Go to yourdomain.com/admin.html and enter your admin password (the one you set in config.js).\n2. Type an artist name in the search box. The panel queries Archive.org and shows matching albums as cards with artwork and track counts.\n3. Tick the albums you want to add. Click Batch Add. The panel fetches each album\'s file list, finds all MP3s, and inserts them into your Supabase tracks table one by one. A progress counter shows how many have been added.\n4. Alternatively, paste any archive.org/details/IDENTIFIER URL directly into the URL paste box to add a specific album immediately.\n5. Use the Manage Tracks section to see everything currently in your database, filter by artist or title, and remove anything you do not want.\n\n**Finding music:** search for artists by name. Try genres — "krautrock", "drone", "free jazz", "experimental", "psych folk", "motorik". The netlabels collection on Archive.org (small labels releasing under Creative Commons) is particularly good for underground material. The more specific your searches, the better the results.\n\n**You are done with Stage 4 when:** you have at least 20-30 tracks in your Supabase tracks table and the player loads and plays them on shuffle.\n\n---\n\n## Stage 5 — Melt and Molt\n\n**What you are doing:** verifying that the personal curation system works correctly end to end.\n\n**How melt works:**\n\nThe first time a listener taps Melt, a bottom sheet slides up explaining what it does. After dismissing it, a MELT code is generated in their browser — four random characters in the format MELT-XXXX — and saved to their browser\'s localStorage. The track is saved locally and also sent to Supabase. Every subsequent melt fires immediately with a green confirmation line.\n\n**How molt works:**\n\nThe first time a listener taps Molt, a bottom sheet explains it. After dismissing, the track is added to a local block list in localStorage and removed from the current shuffle immediately. It is also logged to Supabase. Molted tracks never sync between devices — they only block playback on the device where the molt happened.\n\n**Testing:**\n\n1. Play a track. Tap Melt. You should see the first-time explanation sheet, then "melted into your curation ✓" in green.\n2. Tap Melt again on the same track. You should see "already in your curation" in grey — no duplicate saved.\n3. Tap Molt on a track. It should disappear from the shuffle and never play again on this device.\n4. Open the Curations panel. Your melted track should appear in My Curation with your MELT code displayed below.\n5. In Supabase, open the melts table and the user_curations table — you should see rows with your MELT code.\n\n**You are done with Stage 5 when:** melt and molt both work, duplicates are blocked, and you can see data appearing in Supabase.\n\n---\n\n## Stage 6 — Curations panel\n\n**What you are doing:** verifying the full personal curation experience — viewing, playing and transferring a curation.\n\n**What it contains:**\n\n- A list of every track you have melted, with × buttons to remove individual tracks.\n- A Play My Curation button that switches the player into a mode where it only plays your melted tracks on shuffle. A small indicator in the player shows you are in curation mode. Playing it again returns to the full station.\n- Your MELT code in green, with a note that you only need it if you want to transfer to another device.\n- A transfer section (collapsed on mobile, open on desktop) with an input to enter a MELT code from another device and a Load button that pulls that curation from Supabase into your current browser.\n\n**Testing transfer between devices:**\n\n1. Melt several tracks on your desktop.\n2. Note your MELT code from the Curations panel.\n3. Open your radio station on your phone.\n4. Go to Curations, tap "transfer to another device ↓", enter your code and tap Load my curation.\n5. Your melted tracks should appear on your phone.\n\n**You are done with Stage 6 when:** Play My Curation works, transfer between devices works, and removing tracks from the curation works.\n\n---\n\n## Stage 7 — Info overlay and BYO panel\n\n**What you are doing:** personalising the station — writing your own station description and curator notes, and confirming the BYO prompt copies correctly.\n\n**Info overlay:** tap the ⓘ icon pulsing in the top-right of the artwork. Edit the station description to describe your own station and your taste. Edit the current curation section to describe the artist or collection you are currently featuring. The About the curator section is collapsed by default — edit it to explain why you built this and what kind of music you are exploring.\n\n**BYO panel:** tap BYO in the footer. You should see the full prompt in a copyable block with a green Copy button. Test it — tap Copy, open a new chat with an AI, paste it in. Confirm it pastes correctly and completely. Below the prompt block you should also see a link to download this companion document.\n\n**You are done with Stage 7 when:** the info overlay has your own writing in it and the BYO prompt copies and downloads correctly.\n\n---\n\n## Stage 8 — PWA (add to home screen)\n\n**What you are doing:** making the station installable as an app on any phone or desktop.\n\n**On Android (Chrome):** open your station URL in Chrome. Tap the three-dot menu. Tap Add to home screen. It installs as an app icon that opens fullscreen with no browser bar.\n\n**On iPhone (Safari):** open your station URL in Safari. Tap the share icon (box with arrow). Tap Add to Home Screen. Confirm. It installs as an icon on your home screen.\n\n**On desktop (Chrome or Edge):** look for an install icon in the address bar (a small screen with a download arrow). Click it and confirm. The station opens as a standalone window.\n\n**What makes it installable:** the manifest.json file in your repository tells the browser the app name, icon and theme colour. The AI will have created this for you in Stage 3. If the install option does not appear, check that manifest.json is being served correctly.\n\n**You are done with Stage 8 when:** your station is installed on your phone as an app icon and opens fullscreen.\n\n---\n\n## Common problems and fixes\n\n**The player loads but shows no tracks:** check that your Supabase tracks table has rows in it — go to the Table Editor in Supabase and look. If empty, use the admin panel to add music first.\n\n**Tracks play for 2-3 seconds then skip constantly:** Archive.org stream failures. This is normal for some items. The auto-skip should handle it. If it skips four times in a row and stops, your connection may be struggling with Archive.org — try again later.\n\n**Melt does not save to Supabase:** open your browser\'s developer console (F12 → Console). Look for red errors. Usually this means your Supabase URL or anon key in config.js is wrong or has extra spaces.\n\n**The admin panel cannot find any tracks:** Archive.org searches are case-sensitive for the creator field. Try different spellings, search by subject or title instead of creator, or use the URL paste box with a direct archive.org/details link.\n\n**Changes not showing after deploying:** update the `INDEX_HTML` environment variable in your Cloudflare Worker and click Deploy. Hard reload the page (Ctrl+Shift+R or Cmd+Shift+R). Favicon changes may need ?v=2 added to the favicon link in the HTML.\n\n**The transfer code input is not visible on mobile:** tap "transfer to another device ↓" — it is collapsed by default on mobile to reduce clutter.\n\n---\n\n## What it costs\n\n| Item | Cost |\n|------|------|\n| Domain name (Namecheap) | ~€5/year |\n| Supabase (free tier) | €0 |\n| Cloudflare Workers (free tier) | €0 |\n| GitHub (free tier) | €0 |\n| Archive.org music | €0 |\n| **Total** | **~€5/year** |\n\nThe free tiers are generous. Supabase free gives you 500MB database storage and 2GB bandwidth per month. Cloudflare Workers free gives you 100,000 requests per day. You would need thousands of daily active listeners before hitting any limits.\n\n---\n\n## Where to go next\n\nOnce your station is running, there are three directions you can take it.\n\n**As a listener:** just keep melting and molting. Your curation gets better over time. Share your station URL with people whose taste you respect.\n\n**As a builder:** explore Archive.org more deeply. Use the admin panel to build themed exhibitions — a month of motorik, a week of home-recorded folk, a collection of short experimental pieces. Swap the curation in and out. Each exhibition is a fresh start for your listeners.\n\n**As a developer:** the peer.school canvas has scraping instruments that let you build more sophisticated discovery tools — searching by duration, by year, by subject tag, by archive collection, combining filters to find things that are genuinely hard to find any other way. Contact ross@peer.school for access.\n\n---\n\n*Built with meltify.org — an underground radio station for people who take music seriously.*\n';
+  const blob = new Blob([text], { type: 'text/markdown' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'build-your-own-radio.md';
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+function copyMasterPrompt(btn) {
+  const text = document.getElementById('master-prompt').textContent.trim();
+  navigator.clipboard.writeText(text).then(() => {
+    btn.textContent = 'Copied!';
+    setTimeout(() => btn.textContent = 'Copy the prompt', 2000);
+  });
+}
+
+function showPrivacy() {
+  document.getElementById('privacy-panel').style.display = 'block';
+  document.getElementById('info-overlay').style.display = 'none';
+  document.getElementById('myo-panel').style.display = 'none';
+  document.getElementById('prev-panel').style.display = 'none';
+  document.getElementById('download-panel').style.display = 'none';
+  document.querySelector('.body').style.display = 'none';
+  document.querySelector('.site-footer').style.display = 'none';
+  window.scrollTo(0, 0);
+}
+
+function hidePrivacy() {
+  document.getElementById('privacy-panel').style.display = 'none';
+  document.querySelector('.body').style.display = 'flex';
+  document.querySelector('.site-footer').style.display = 'flex';
+}
+
+function showDownload() {
+  document.querySelector('.site-footer').style.display = 'none';
+  document.getElementById('download-panel').style.display = 'block';
+  document.getElementById('info-overlay').style.display = 'none';
+  document.getElementById('myo-panel').style.display = 'none';
+  document.getElementById('prev-panel').style.display = 'none';
+  document.querySelector('.body').style.display = 'none';
+  window.scrollTo(0, 0);
+}
+
+function hideDownload() {
+  document.querySelector('.site-footer').style.display = 'flex';
+  document.getElementById('download-panel').style.display = 'none';
+  document.querySelector('.body').style.display = 'flex';
+}
+
+function showInfo() {
+  const overlay = document.getElementById('info-overlay');
+  overlay.style.display = 'block';
+  overlay.scrollTop = 0;
+  document.getElementById('myo-panel').style.display = 'none';
+  document.getElementById('prev-panel').style.display = 'none';
+  document.querySelector('.body').style.display = 'none';
+  window.scrollTo(0, 0);
+}
+
+function hideInfo() {
+  document.getElementById('info-overlay').style.display = 'none';
+  document.querySelector('.body').style.display = 'flex';
+}
+
+function showMakeYourOwn() {
+  document.querySelector('.site-footer').style.display = 'none';
+  document.getElementById('myo-panel').style.display = 'block';
+  document.getElementById('info-overlay').style.display = 'none';
+  document.getElementById('prev-panel').style.display = 'none';
+  document.querySelector('.body').style.display = 'none';
+  window.scrollTo(0, 0);
+}
+
+function hideMakeYourOwn() {
+  document.querySelector('.site-footer').style.display = 'flex';
+  document.getElementById('myo-panel').style.display = 'none';
+  document.querySelector('.body').style.display = 'flex';
+}
+
+function showPrevious() {
+  document.getElementById('prev-panel').style.display = 'block';
+  document.getElementById('info-overlay').style.display = 'none';
+  document.getElementById('myo-panel').style.display = 'none';
+  document.querySelector('.body').style.display = 'none';
+  document.querySelector('.site-footer').style.display = 'none';
+  window.scrollTo(0, 0);
+  renderMyCuration();
+}
+
+function toggleTransfer() {
+  const section = document.getElementById('transfer-section');
+  const btn = document.getElementById('transfer-toggle');
+  const open = section.style.display !== 'none';
+  section.style.display = open ? 'none' : 'flex';
+  btn.textContent = open ? 'use on another device ↓' : 'use on another device ↑';
+}
+
+// On desktop show transfer section by default, on mobile hide it
+document.addEventListener('DOMContentLoaded', function() {
+  const section = document.getElementById('transfer-section');
+  const btn = document.getElementById('transfer-toggle');
+  if (!section || !btn) return;
+  if (window.innerWidth >= 640) {
+    section.style.display = 'flex';
+    btn.textContent = 'use on another device ↑';
+  } else {
+    section.style.display = 'none';
+  }
+});
+
+function generateCode() {
+  const code = getUserId();
+  const el = document.getElementById('generated-code');
+  const btn = document.getElementById('generate-code-btn');
+  el.textContent = code;
+  el.style.display = 'block';
+  btn.textContent = 'Code generated — save it';
+  btn.style.borderColor = '#1DB954';
+  btn.style.color = '#1DB954';
+  // Also show in my curation section if visible
+  const codeEl = document.getElementById('my-curation-code');
+  if (codeEl) codeEl.textContent = code;
+}
+
+function renderMyCuration() {
+  const curation = getMyCuration();
+  const emptyEl = document.getElementById('my-curation-empty');
+  const listEl = document.getElementById('my-curation-list');
+  const codeEl = document.getElementById('my-curation-code');
+  const countEl = document.getElementById('my-curation-count');
+  const tracksEl = document.getElementById('my-curation-tracks');
+
+  if (curation.length === 0) {
+    emptyEl.style.display = 'block';
+    listEl.style.display = 'none';
+    return;
+  }
+
+  emptyEl.style.display = 'none';
+  listEl.style.display = 'block';
+  codeEl.textContent = getUserId();
+  countEl.textContent = curation.length + ' track' + (curation.length === 1 ? '' : 's');
+
+  tracksEl.innerHTML = '';
+  curation.forEach((t, i) => {
+    const el = document.createElement('div');
+    el.style.cssText = 'display:flex;align-items:center;gap:12px;padding:8px 0;border-bottom:1px solid #1a1a1a';
+    el.innerHTML = `
+      <div style="flex:1;min-width:0;overflow:hidden">
+        <div style="font-family:var(--mono);font-size:13px;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${t.title || '—'}</div>
+        <div style="font-family:var(--mono);font-size:11px;color:#6b6b6b;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${t.artist || ''}</div>
+      </div>
+      <button onclick="removeMelted(${i})" style="background:none;border:none;color:#444;font-family:var(--mono);font-size:11px;cursor:pointer;flex-shrink:0;padding-left:8px" title="remove">✕</button>
+    `;
+    tracksEl.appendChild(el);
+  });
+}
+
+function removeMelted(index) {
+  const curation = getMyCuration();
+  curation.splice(index, 1);
+  localStorage.setItem('meltify_my_curation', JSON.stringify(curation));
+  renderMyCuration();
+}
+
+function playMyCuration() {
+  const curation = getMyCuration();
+  if (!curation.length) return;
+  shuffled = curation.map(t => ({ ...t }));
+  currentIndex = 0;
+  hidePrevious();
+  setTimeout(() => playTrack(0), 300);
+}
+
+async function loadCurationByCode() {
+  const code = document.getElementById('code-input').value.trim().toUpperCase();
+  const status = document.getElementById('code-status');
+  if (!code.startsWith('MELT-') || code.length !== 9) {
+    status.textContent = 'Invalid code — should look like MELT-XXXX';
+    status.style.color = '#ff5f5f';
+    return;
+  }
+  status.textContent = 'Loading...';
+  status.style.color = '#6b6b6b';
+  try {
+    const r = await fetch(`${SUPABASE_URL}/rest/v1/user_curations?user_id=eq.${code}&select=*`, {
+      headers: { 'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + SUPABASE_KEY }
+    });
+    const data = await r.json();
+    if (!data.length) {
+      status.textContent = 'No curation found for that code.';
+      status.style.color = '#ff5f5f';
+      return;
+    }
+    const tracks = data.map(d => ({ url: d.track_url, artist: d.artist, title: d.title, album: d.album, artwork: d.artwork }));
+    localStorage.setItem('meltify_my_curation', JSON.stringify(tracks));
+    localStorage.setItem('meltify_user_id', code);
+    status.textContent = `Loaded ${tracks.length} tracks from your curation.`;
+    status.style.color = '#1DB954';
+    renderMyCuration();
+  } catch(e) {
+    status.textContent = 'Could not load — check your connection.';
+    status.style.color = '#ff5f5f';
+  }
+}
+
+function hidePrevious() {
+  document.getElementById('prev-panel').style.display = 'none';
+  document.querySelector('.body').style.display = 'flex';
+  document.querySelector('.site-footer').style.display = 'flex';
+}
+
+// Install hint in BYO panel
+(function() {
+  const hint = document.getElementById('byo-install-hint');
+  if (!hint) return;
+  if (window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone) return;
+  const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+  hint.style.display = 'block';
+  hint.textContent = isMobile
+    ? 'Tip: Add Meltify to your home screen — tap the share icon then "Add to Home Screen".'
+    : 'Tip: Install Meltify as an app — click the icon in your address bar.';
+})();
+
+updateRings();
+renderBlocked();
+init();
+</script>
+</body>
+</html>

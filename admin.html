@@ -1,0 +1,622 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Meltify Admin</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;700;800&family=Syne+Mono&display=swap" rel="stylesheet">
+<script src="config.js"></script>
+<style>
+:root {
+  --bg: #0d0d0d; --bg2: #141414; --bg3: #1c1c1c;
+  --line: #282828; --line2: #333; --text: #f0ede8;
+  --muted: #5a5a5a; --mid: #888; --accent: #ff4d1c;
+  --accent2: #ff7a50; --green: #4caf50; --red: #ff5f5f;
+  --syne: 'Syne', sans-serif; --mono: 'Syne Mono', monospace;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { background: var(--bg); color: var(--text); font-family: var(--syne); min-height: 100vh; }
+
+.header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 18px 28px; border-bottom: 1px solid var(--line);
+}
+.wordmark { font-weight: 800; font-size: 20px; }
+.wordmark span { color: var(--accent); }
+.admin-badge {
+  font-family: var(--mono); font-size: 10px; color: var(--accent);
+  border: 1px solid var(--accent); padding: 3px 8px; border-radius: 3px;
+  letter-spacing: 0.1em;
+}
+
+/* LOGIN */
+#login-screen {
+  display: flex; align-items: center; justify-content: center;
+  min-height: calc(100vh - 57px);
+}
+.login-box {
+  background: var(--bg2); border: 1px solid var(--line2);
+  border-radius: 8px; padding: 32px; width: 360px;
+}
+.login-box h2 { font-size: 16px; margin-bottom: 6px; }
+.login-box p { font-family: var(--mono); font-size: 11px; color: var(--muted); margin-bottom: 20px; }
+.field { margin-bottom: 14px; }
+.field label { font-family: var(--mono); font-size: 10px; color: var(--muted); letter-spacing: 0.1em; text-transform: uppercase; display: block; margin-bottom: 6px; }
+input[type="password"], input[type="text"], select {
+  width: 100%; background: var(--bg3); border: 1px solid var(--line2);
+  color: var(--text); font-family: var(--syne); font-size: 13px;
+  padding: 8px 12px; border-radius: 4px; outline: none;
+}
+input:focus, select:focus { border-color: var(--accent); }
+.btn {
+  background: var(--accent); color: #fff; border: none;
+  font-family: var(--mono); font-size: 12px; font-weight: 500;
+  letter-spacing: 0.08em; text-transform: uppercase;
+  padding: 10px 20px; border-radius: 4px; cursor: pointer;
+  transition: opacity 0.15s; width: 100%;
+}
+.btn:hover { opacity: 0.85; }
+.btn:disabled { opacity: 0.4; cursor: not-allowed; }
+.btn-ghost {
+  background: none; border: 1px solid var(--line2); color: var(--muted);
+  font-family: var(--mono); font-size: 11px; letter-spacing: 0.08em;
+  text-transform: uppercase; padding: 7px 14px; border-radius: 4px;
+  cursor: pointer; transition: color 0.15s, border-color 0.15s;
+}
+.btn-ghost:hover { color: var(--text); border-color: var(--mid); }
+.btn-danger {
+  background: none; border: 1px solid var(--line2); color: var(--red);
+  font-family: var(--mono); font-size: 11px; padding: 5px 10px;
+  border-radius: 3px; cursor: pointer;
+}
+.btn-danger:hover { background: rgba(255,95,95,0.1); }
+.btn-add {
+  background: none; border: 1px solid var(--green); color: var(--green);
+  font-family: var(--mono); font-size: 11px; padding: 5px 10px;
+  border-radius: 3px; cursor: pointer;
+}
+.btn-add:hover { background: rgba(76,175,80,0.1); }
+.err { color: var(--red); font-family: var(--mono); font-size: 11px; margin-top: 8px; }
+
+/* MAIN */
+#main-screen { display: none; padding: 28px; }
+.grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+
+.panel {
+  background: var(--bg2); border: 1px solid var(--line);
+  border-radius: 8px; overflow: hidden;
+}
+.panel-header {
+  padding: 14px 20px; border-bottom: 1px solid var(--line);
+  display: flex; align-items: center; justify-content: space-between;
+}
+.panel-title { font-family: var(--mono); font-size: 10px; color: var(--muted); letter-spacing: 0.14em; text-transform: uppercase; }
+.panel-body { padding: 16px 20px; }
+
+.search-row { display: flex; gap: 8px; margin-bottom: 14px; }
+.search-row input { flex: 1; }
+.search-row select { width: 160px; }
+
+.result-list { display: flex; flex-direction: column; gap: 6px; max-height: 420px; overflow-y: auto; }
+.result-list::-webkit-scrollbar { width: 3px; }
+.result-list::-webkit-scrollbar-thumb { background: var(--line2); }
+
+.result-item {
+  display: flex; align-items: center; gap: 10px;
+  padding: 8px 10px; background: var(--bg3); border-radius: 4px;
+  border: 1px solid transparent;
+}
+.result-item:hover { border-color: var(--line2); }
+.result-info { flex: 1; min-width: 0; }
+.result-title { font-size: 12px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.result-artist { font-family: var(--mono); font-size: 10px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+.track-list { display: flex; flex-direction: column; gap: 4px; max-height: 500px; overflow-y: auto; }
+.track-list::-webkit-scrollbar { width: 3px; }
+.track-list::-webkit-scrollbar-thumb { background: var(--line2); }
+
+.track-item {
+  display: flex; align-items: center; gap: 8px;
+  padding: 7px 10px; background: var(--bg3); border-radius: 4px;
+}
+.track-item .t-info { flex: 1; min-width: 0; }
+.track-item .t-title { font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.track-item .t-artist { font-family: var(--mono); font-size: 10px; color: var(--muted); }
+
+.status-bar {
+  font-family: var(--mono); font-size: 11px; color: var(--muted);
+  padding: 10px 0; min-height: 32px;
+}
+.status-bar.ok { color: var(--green); }
+.status-bar.err { color: var(--red); }
+
+.stats { display: flex; gap: 20px; margin-bottom: 20px; }
+.stat { background: var(--bg3); border-radius: 4px; padding: 10px 16px; }
+.stat-val { font-size: 22px; font-weight: 700; color: var(--accent); }
+.stat-label { font-family: var(--mono); font-size: 10px; color: var(--muted); margin-top: 2px; }
+
+audio { display: none; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="wordmark">melt<span>i</span>fy</div>
+  <div class="admin-badge">admin</div>
+</div>
+
+<!-- LOGIN -->
+<div id="login-screen">
+  <div class="login-box">
+    <h2>Admin access</h2>
+    <p>Enter your admin password to continue.</p>
+    <div class="field">
+      <label>Admin password</label>
+      <input type="password" id="admin-pass" placeholder="password" onkeydown="if(event.key==='Enter')login()" />
+    </div>
+    <button class="btn" onclick="login()">Enter</button>
+    <div class="err" id="login-err"></div>
+  </div>
+</div>
+
+<!-- MAIN -->
+<div id="main-screen">
+  <div class="stats">
+    <div class="stat">
+      <div class="stat-val" id="stat-total">—</div>
+      <div class="stat-label">total tracks</div>
+    </div>
+    <div class="stat">
+      <div class="stat-val" id="stat-artists">—</div>
+      <div class="stat-label">artists</div>
+    </div>
+  </div>
+
+  <div class="grid">
+    <!-- SEARCH PANEL -->
+    <div class="panel">
+      <div class="panel-header">
+        <span class="panel-title">find artist / album</span>
+      </div>
+      <div class="panel-body">
+        <div style="display:flex;gap:8px;margin-bottom:14px">
+          <input type="text" id="artist-q" placeholder="artist name, genre, label..." onkeydown="if(event.key==='Enter')searchArtist()" style="flex:1" />
+          <button class="btn" id="search-btn" onclick="searchArtist()" style="width:auto;padding:8px 16px">search</button>
+        </div>
+        <div style="font-family:var(--mono);font-size:10px;color:var(--muted);margin-bottom:8px">— or paste a URL —</div>
+        <div style="display:flex;gap:8px;margin-bottom:14px">
+          <input type="text" id="archive-url" placeholder="https://archive.org/details/..." style="flex:1" onkeydown="if(event.key==='Enter')addFromUrl()" />
+          <button class="btn-ghost" onclick="addFromUrl()" style="white-space:nowrap">add url</button>
+        </div>
+        <div class="result-list" id="result-list"></div>
+        <div class="status-bar" id="search-status"></div>
+      </div>
+    </div>
+
+    <!-- PLAYLIST PANEL -->
+    <div class="panel">
+      <div class="panel-header">
+        <span class="panel-title">playlist</span>
+        <button class="btn" onclick="savePlaylist()" style="width:auto;padding:6px 16px;font-size:11px" id="save-btn">save changes</button>
+      </div>
+      <div class="panel-body">
+        <div style="display:flex;gap:8px;margin-bottom:12px">
+          <input type="text" id="filter-q" placeholder="filter tracks..." oninput="filterTracks()" style="flex:1" />
+          <button class="btn-danger" onclick="removeAllFiltered()" style="white-space:nowrap">remove all</button>
+        </div>
+        <div class="track-list" id="track-list"></div>
+        <div class="status-bar" id="save-status"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<audio id="preview-audio"></audio>
+
+<script>
+const REPO = 'rrabette/meltify';
+let playlist = [];
+let filtered = [];
+let dirty = false;
+
+function login() {
+  const pass = document.getElementById('admin-pass').value.trim();
+  if (pass !== ADMIN_PASSWORD) {
+    document.getElementById('login-err').textContent = 'wrong password';
+    return;
+  }
+  document.getElementById('login-screen').style.display = 'none';
+  document.getElementById('main-screen').style.display = 'block';
+  loadPlaylist();
+}
+
+function resetToken() {
+  localStorage.removeItem('meltify_gh_token');
+}
+
+function checkSavedToken() {}
+checkSavedToken();
+
+async function sbFetch(path, opts = {}) {
+  return fetch(SUPABASE_URL + '/rest/v1/' + path, {
+    ...opts,
+    headers: {
+      'apikey': SUPABASE_KEY,
+      'Authorization': 'Bearer ' + SUPABASE_KEY,
+      'Content-Type': 'application/json',
+      'Prefer': 'return=representation',
+      ...(opts.headers || {})
+    }
+  });
+}
+
+async function loadPlaylist() {
+  setStatus('save-status', 'loading playlist...');
+  try {
+    let all = [];
+    let from = 0;
+    const pageSize = 1000;
+    while (true) {
+      const r = await sbFetch('tracks?select=*&order=id.asc&limit=' + pageSize + '&offset=' + from);
+      const page = await r.json();
+      if (!page.length) break;
+      all = all.concat(page);
+      if (page.length < pageSize) break;
+      from += pageSize;
+    }
+    playlist = all;
+    renderPlaylist();
+    updateStats();
+    setStatus('save-status', 'loaded ' + playlist.length + ' tracks', 'ok');
+  } catch(e) {
+    setStatus('save-status', 'error loading playlist: ' + e.message, 'err');
+  }
+}
+
+function updateStats() {
+  document.getElementById('stat-total').textContent = playlist.length.toLocaleString();
+  const artists = new Set(playlist.map(t => t.artist)).size;
+  document.getElementById('stat-artists').textContent = artists;
+}
+
+function renderPlaylist(tracks) {
+  const list = tracks || playlist;
+  filtered = list;
+  const el = document.getElementById('track-list');
+  el.innerHTML = '';
+  list.forEach((t, i) => {
+    const item = document.createElement('div');
+    item.className = 'track-item';
+    item.innerHTML = `
+      <div class="t-info">
+        <div class="t-title">${esc(t.title)}</div>
+        <div class="t-artist">${esc(t.artist)}${t.album ? ' — ' + esc(t.album) : ''}</div>
+      </div>
+      <button class="btn-ghost" style="font-size:10px;padding:4px 8px" onclick="previewTrack('${esc(t.url)}')">▶</button>
+      <button class="btn-danger" onclick="removeTrack(${t.id})">remove</button>
+    `;
+    el.appendChild(item);
+  });
+}
+
+function filterTracks() {
+  const q = document.getElementById('filter-q').value.toLowerCase().trim();
+  if (!q) { renderPlaylist(); return; }
+  const matches = playlist.filter(t =>
+    String(t.title||'').toLowerCase().includes(q) ||
+    String(t.artist||'').toLowerCase().includes(q) ||
+    String(t.album||'').toLowerCase().includes(q)
+  );
+  renderPlaylist(matches);
+  setStatus('save-status', matches.length + ' tracks matching "' + q + '"');
+}
+
+function removeTrack(id) {
+  window._deletedIds = window._deletedIds || [];
+  window._deletedIds.push(id);
+  playlist = playlist.filter(t => t.id !== id);
+  dirty = true;
+  filterTracks();
+  updateStats();
+  setStatus('save-status', 'track removed — click save changes', 'ok');
+}
+
+function previewTrack(url) {
+  const a = document.getElementById('preview-audio');
+  if (a.src === url && !a.paused) { a.pause(); return; }
+  a.src = url;
+  a.play().catch(() => {});
+}
+
+async function searchArtist() {
+  const q = document.getElementById('artist-q').value.trim();
+  if (!q) return;
+  const btn = document.getElementById('search-btn');
+  btn.disabled = true;
+  btn.textContent = 'searching...';
+  setStatus('search-status', 'searching archive.org...');
+  document.getElementById('result-list').innerHTML = '';
+
+  const seen = new Set();
+  const allDocs = [];
+
+  // Search 1: direct creator search across all audio (most reliable)
+  try {
+    const query = `creator:"${q}" AND mediatype:audio`;
+    const url = `https://archive.org/advancedsearch.php?q=${encodeURIComponent(query)}&fl[]=identifier,title,creator&sort[]=downloads+desc&rows=50&output=json`;
+    const r = await fetch(url);
+    const d = await r.json();
+    (d.response?.docs || []).forEach(doc => {
+      if (!seen.has(doc.identifier)) { seen.add(doc.identifier); allDocs.push(doc); }
+    });
+  } catch(e) {}
+
+  // Search 2: title search
+  if (allDocs.length < 5) {
+    try {
+      const query = `title:"${q}" AND mediatype:audio`;
+      const url = `https://archive.org/advancedsearch.php?q=${encodeURIComponent(query)}&fl[]=identifier,title,creator&sort[]=downloads+desc&rows=20&output=json`;
+      const r = await fetch(url);
+      const d = await r.json();
+      (d.response?.docs || []).forEach(doc => {
+        if (!seen.has(doc.identifier)) { seen.add(doc.identifier); allDocs.push(doc); }
+      });
+    } catch(e) {}
+  }
+
+  if (!allDocs.length) {
+    setStatus('search-status', 'no results — try a different spelling');
+    btn.disabled = false; btn.textContent = 'search';
+    return;
+  }
+
+  setStatus('search-status', `found ${allDocs.length} releases — loading details...`);
+  const list = document.getElementById('result-list');
+
+  // Add select all button
+  const selectBar = document.createElement('div');
+  selectBar.style.cssText = 'display:flex;gap:8px;margin-bottom:10px;align-items:center';
+  selectBar.innerHTML = `
+    <label style="font-family:var(--mono);font-size:11px;color:var(--muted);display:flex;align-items:center;gap:6px">
+      <input type="checkbox" id="select-all" onchange="toggleSelectAll(this)"> select all
+    </label>
+    <button class="btn-add" onclick="addSelected()" style="margin-left:auto">+ add selected</button>
+  `;
+  list.appendChild(selectBar);
+
+  for (const doc of allDocs) {
+    try {
+      const filesR = await fetch(`https://archive.org/metadata/${doc.identifier}/files`);
+      const filesD = await filesR.json();
+      const files = filesD.result || [];
+      const mp3s = files.filter(f => f.name?.match(/\.mp3$/i) && f.source !== 'derivative' && !f.name.includes('_vbr'));
+      const allMp3s = mp3s.length ? mp3s : files.filter(f => f.name?.match(/\.mp3$/i));
+      if (!allMp3s.length) continue;
+      const artFile = files.find(f => f.name?.match(/\.(jpg|jpeg|png)$/i) && (f.name.toLowerCase().includes('cover') || f.name.toLowerCase().includes('thumb') || f.name.toLowerCase().includes('folder'))) || files.find(f => f.name?.match(/\.(jpg|jpeg|png)$/i));
+      const artwork = artFile ? `https://archive.org/download/${doc.identifier}/${encodeURIComponent(artFile.name)}` : '';
+
+      const item = document.createElement('div');
+      item.className = 'result-item';
+      item.dataset.identifier = doc.identifier;
+      item.style.cssText = 'align-items:center;gap:10px';
+      item.innerHTML = `
+        <input type="checkbox" class="release-cb" data-id="${doc.identifier}" style="flex-shrink:0" />
+        ${artwork ? `<img src="${artwork}" style="width:48px;height:48px;object-fit:cover;border-radius:4px;flex-shrink:0" onerror="this.style.display='none'" />` : '<div style="width:48px;height:48px;background:var(--bg3);border-radius:4px;flex-shrink:0"></div>'}
+        <div class="result-info" style="flex:1;min-width:0">
+          <div class="result-title">${esc(doc.title || 'untitled')}</div>
+          <div class="result-artist">${esc(doc.creator || '')} · ${allMp3s.length} tracks</div>
+        </div>
+        <button class="btn-add" onclick="addRelease('${doc.identifier}')">+ add</button>
+      `;
+      list.appendChild(item);
+    } catch(e) {}
+    await new Promise(r => setTimeout(r, 80));
+  }
+
+  setStatus('search-status', `${allDocs.length} releases found`);
+  btn.disabled = false;
+  btn.textContent = 'search';
+}
+
+function toggleSelectAll(cb) {
+  document.querySelectorAll('.release-cb').forEach(c => c.checked = cb.checked);
+}
+
+async function addSelected() {
+  const checked = [...document.querySelectorAll('.release-cb:checked')];
+  if (!checked.length) { setStatus('search-status', 'select some releases first', 'err'); return; }
+  setStatus('search-status', `adding ${checked.length} releases...`);
+  for (const cb of checked) {
+    await addRelease(cb.dataset.id);
+    await new Promise(r => setTimeout(r, 200));
+  }
+  setStatus('search-status', `done — all selected releases added`, 'ok');
+}
+
+async function previewFirst(identifier) {
+  try {
+    const r = await fetch(`https://archive.org/metadata/${identifier}/files`);
+    const d = await r.json();
+    const mp3 = (d.result || []).find(f => f.name?.match(/\.mp3$/i));
+    if (mp3) previewTrack(`https://archive.org/download/${identifier}/${encodeURIComponent(mp3.name)}`);
+  } catch(e) {}
+}
+
+async function addRelease(identifier) {
+  setStatus('search-status', `adding ${identifier}...`);
+  try {
+    const metaR = await fetch(`https://archive.org/metadata/${identifier}`);
+    const meta = await metaR.json();
+    const album = meta.metadata?.title || identifier;
+    const creator = Array.isArray(meta.metadata?.creator) ? meta.metadata.creator[0] : (meta.metadata?.creator || 'unknown');
+    const filesR = await fetch(`https://archive.org/metadata/${identifier}/files`);
+    const filesD = await filesR.json();
+    const files = filesD.result || [];
+    const artFile = files.find(f => f.name?.match(/\.(jpg|jpeg|png)$/i) && (f.name.toLowerCase().includes('cover') || f.name.toLowerCase().includes('thumb') || f.name.toLowerCase().includes('folder'))) || files.find(f => f.name?.match(/\.(jpg|jpeg|png)$/i));
+    const artwork = artFile ? `https://archive.org/download/${identifier}/${encodeURIComponent(artFile.name)}` : '';
+    let mp3s = files.filter(f => f.name?.match(/\.mp3$/i) && f.source !== 'derivative' && !f.name.includes('_vbr') && !f.name.includes('64kb'));
+    if (!mp3s.length) mp3s = files.filter(f => f.name?.match(/\.mp3$/i));
+    const existing = new Set(playlist.map(t => t.url));
+    const toInsert = mp3s.filter(f => {
+      const url = `https://archive.org/download/${identifier}/${encodeURIComponent(f.name)}`;
+      return !existing.has(url);
+    }).map(f => {
+      let trackTitle = f.name.replace(/\.mp3$/i,'').replace(/^[\d]+[-_.\s]+/,'').replace(/_/g,' ').trim() || album;
+      return { title: trackTitle, artist: creator, album, url: `https://archive.org/download/${identifier}/${encodeURIComponent(f.name)}`, artwork, duration: f.length ? fmtDur(parseFloat(f.length)) : '', license: meta.metadata?.licenseurl || 'CC', source: `https://archive.org/details/${identifier}` };
+    });
+    if (!toInsert.length) { setStatus('search-status', 'all tracks already in playlist', 'ok'); return; }
+    const res = await sbFetch('tracks', { method: 'POST', body: JSON.stringify(toInsert) });
+    const inserted = await res.json();
+    playlist = playlist.concat(Array.isArray(inserted) ? inserted : []);
+    updateStats();
+    renderPlaylist();
+    setStatus('search-status', `added ${toInsert.length} tracks from "${album}" — live now`, 'ok');
+  } catch(e) {
+    setStatus('search-status', 'error: ' + e.message, 'err');
+  }
+}
+
+async function addFromUrl() {
+  const input = document.getElementById('archive-url').value.trim();
+  if (!input) return;
+  let identifier = input;
+  const match = input.match(/archive\.org\/details\/([^/?#]+)/);
+  if (match) identifier = match[1];
+  setStatus('search-status', 'fetching from archive.org...');
+  document.getElementById('result-list').innerHTML = '';
+  try {
+    const metaR = await fetch('https://archive.org/metadata/' + identifier);
+    const meta = await metaR.json();
+    const album = meta.metadata?.title || identifier;
+    const creator = Array.isArray(meta.metadata?.creator) ? meta.metadata.creator[0] : (meta.metadata?.creator || 'unknown');
+    const filesR = await fetch('https://archive.org/metadata/' + identifier + '/files');
+    const filesD = await filesR.json();
+    const files = filesD.result || [];
+
+    // find artwork
+    const artFile = files.find(f => f.name?.match(/\.(jpg|jpeg|png)$/i) && (f.name.includes('cover') || f.name.includes('thumb') || f.name.includes('folder') || f.name.includes('front')))
+      || files.find(f => f.name?.match(/\.(jpg|jpeg|png)$/i));
+    const artwork = artFile ? 'https://archive.org/download/' + identifier + '/' + encodeURIComponent(artFile.name) : '';
+
+    let mp3s = files.filter(f => f.name?.match(/\.mp3$/i) && f.source !== 'derivative' && !f.name.includes('_vbr') && !f.name.includes('64kb'));
+    if (!mp3s.length) mp3s = files.filter(f => f.name?.match(/\.mp3$/i));
+    if (!mp3s.length) { setStatus('search-status', 'no MP3 files found', 'err'); return; }
+
+    const existing = new Set(playlist.map(t => t.url));
+    const toInsert = [];
+    for (const f of mp3s) {
+      const url = 'https://archive.org/download/' + identifier + '/' + encodeURIComponent(f.name);
+      if (existing.has(url)) continue;
+      // clean up track title from filename
+      let trackTitle = f.name
+        .replace(/\.mp3$/i, '')
+        .replace(/^[\d]+[-_\s]+/, '')
+        .replace(/_/g, ' ')
+        .replace(/^Big_Blood_-_\d+_-_/i, '')
+        .replace(/^Big_Blood_-_/i, '')
+        .trim();
+      if (!trackTitle) trackTitle = album;
+      toInsert.push({ title: trackTitle, artist: creator, album, url, artwork, duration: f.length ? fmtDur(parseFloat(f.length)) : '', license: meta.metadata?.licenseurl || 'CC', source: 'https://archive.org/details/' + identifier });
+    }
+    if (!toInsert.length) { setStatus('search-status', 'all tracks already in playlist'); return; }
+
+    const list = document.getElementById('result-list');
+    const preview = document.createElement('div');
+    preview.className = 'result-item';
+    preview.dataset.tracks = JSON.stringify(toInsert);
+    preview.innerHTML = `
+      ${artwork ? `<img src="${artwork}" style="width:48px;height:48px;object-fit:cover;border-radius:4px;flex-shrink:0" />` : ''}
+      <div class="result-info">
+        <div class="result-title">${esc(album)}</div>
+        <div class="result-artist">${esc(creator)} — ${toInsert.length} tracks ready</div>
+      </div>
+      <button class="btn-add" onclick="confirmAdd(this)">confirm add</button>
+    `;
+    list.appendChild(preview);
+    setStatus('search-status', toInsert.length + ' tracks found — click confirm add');
+  } catch(e) {
+    setStatus('search-status', 'error: ' + e.message, 'err');
+  }
+}
+
+async function confirmAdd(btn) {
+  const tracks = JSON.parse(btn.closest('.result-item').dataset.tracks);
+  setStatus('search-status', 'adding ' + tracks.length + ' tracks...');
+  btn.disabled = true;
+  try {
+    const res = await sbFetch('tracks', { method: 'POST', body: JSON.stringify(tracks) });
+    const inserted = await res.json();
+    playlist = playlist.concat(Array.isArray(inserted) ? inserted : []);
+    updateStats();
+    renderPlaylist();
+    document.getElementById('result-list').innerHTML = '';
+    document.getElementById('archive-url').value = '';
+    setStatus('search-status', 'added ' + tracks.length + ' tracks — live on meltify.org now', 'ok');
+  } catch(e) {
+    setStatus('search-status', 'error: ' + e.message, 'err');
+    btn.disabled = false;
+  }
+}
+
+function clearResults() {
+  document.getElementById('result-list').innerHTML = '';
+  setStatus('search-status', '');
+}
+
+async function savePlaylist() {
+  if (!dirty) { setStatus('save-status', 'no changes to save'); return; }
+  const btn = document.getElementById('save-btn');
+  btn.disabled = true;
+  btn.textContent = 'saving...';
+  setStatus('save-status', 'saving...');
+  try {
+    const toDelete = window._deletedIds || [];
+    for (const id of toDelete) {
+      await sbFetch('tracks?id=eq.' + id, { method: 'DELETE' });
+    }
+    window._deletedIds = [];
+    dirty = false;
+    setStatus('save-status', 'saved — live immediately', 'ok');
+  } catch(e) {
+    setStatus('save-status', 'save failed: ' + e.message, 'err');
+  }
+  btn.disabled = false;
+  btn.textContent = 'save changes';
+}
+
+function removeAllFiltered() {
+  if (!filtered.length) return;
+  const ids = filtered.map(t => t.id).filter(Boolean);
+  window._deletedIds = (window._deletedIds || []).concat(ids);
+  const urls = new Set(filtered.map(t => t.url));
+  const count = urls.size;
+  playlist = playlist.filter(t => !urls.has(t.url));
+  dirty = true;
+  document.getElementById('filter-q').value = '';
+  filterTracks();
+  updateStats();
+  setStatus('save-status', 'removed ' + count + ' tracks — click save changes', 'ok');
+}
+
+function clearResults() {
+  document.getElementById('result-list').innerHTML = '';
+  setStatus('search-status', '');
+}
+
+function fmtDur(s) {
+  if (!s || isNaN(s)) return '';
+  return Math.floor(s/60) + ':' + String(Math.floor(s%60)).padStart(2,'0');
+}
+
+function esc(s) {
+  return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/'/g,'&#39;').replace(/"/g,'&quot;');
+}
+
+function setStatus(id, msg, type) {
+  const el = document.getElementById(id);
+  el.textContent = msg;
+  el.className = 'status-bar' + (type ? ' ' + type : '');
+}
+</script>
+</body>
+</html>
